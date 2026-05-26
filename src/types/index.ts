@@ -86,6 +86,7 @@ export interface BlockerLog {
   blocker_type: 'mindset' | 'estrategia' | 'ejecucion' | 'recursos' | 'tiempo' | 'precio' | 'ventas'
   description: string
   protocol_applied?: string
+  ai_protocol?: string
   resolved: boolean
   resolved_at?: string
   created_at: string
