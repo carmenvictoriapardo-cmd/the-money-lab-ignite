@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="40" fill="#0A0A0A"/>
+  <rect width="192" height="192" rx="40" fill="none" stroke="#C9A84C" stroke-width="4"/>
+  <!-- Flame icon -->
+  <path d="M96 44 C96 44 116 64 116 84 C116 88 114 92 112 96 C118 88 120 78 116 68 C124 76 128 88 128 100 C128 118 114 134 96 140 C78 134 64 118 64 100 C64 88 68 76 76 68 C72 78 74 88 80 96 C78 92 76 88 76 84 C76 64 96 44 96 44Z" fill="#C9A84C"/>
+  <path d="M96 80 C96 80 106 90 106 100 C106 106 101 111 96 112 C91 111 86 106 86 100 C86 90 96 80 96 80Z" fill="#0A0A0A" opacity="0.4"/>
+  <!-- IGNITE text -->
+  <text x="96" y="166" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" fill="#C9A84C" text-anchor="middle" letter-spacing="3">IGNITE</text>
+</svg>
