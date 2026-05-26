@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import type { StrategicReview } from '../types'
-import { Target, Plus, X, Trophy, AlertTriangle, HelpCircle } from 'lucide-react'
+import { Target, Plus, X, Trophy, AlertTriangle, HelpCircle, Sparkles } from 'lucide-react'
 
 const GOLD = '#C9A84C'
 const SURFACE = '#111111'
@@ -19,7 +19,7 @@ const REVIEW_TYPES = [
 ]
 
 export default function ReviewPage() {
-  const { profile, getCurrentWeek } = useAuth()
+  const { profile, getCurrentWeek, getCurrentDay } = useAuth()
   const week = getCurrentWeek()
   const [reviews, setReviews] = useState<StrategicReview[]>([])
   const [showForm, setShowForm] = useState(false)
@@ -28,6 +28,7 @@ export default function ReviewPage() {
   const [evidence, setEvidence] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [analyzingIds, setAnalyzingIds] = useState<Set<string>>(new Set())
 
   useEffect(() => { fetchData() }, [profile?.id])
 
@@ -44,18 +45,83 @@ export default function ReviewPage() {
   async function handleSubmit() {
     if (!profile?.id || !context.trim()) return
     setSubmitting(true)
-    await supabase.from('strategic_reviews').insert({
-      user_id: profile.id,
-      week_number: week,
-      type,
-      context: context.trim(),
-      evidence: evidence.trim(),
-    })
+
+    // Capture before clearing
+    const reviewContext = context.trim()
+    const reviewEvidence = evidence.trim()
+    const reviewType = type
+
+    const { data: inserted } = await supabase
+      .from('strategic_reviews')
+      .insert({
+        user_id: profile.id,
+        week_number: week,
+        type: reviewType,
+        context: reviewContext,
+        evidence: reviewEvidence,
+      })
+      .select()
+      .single()
+
     setShowForm(false)
     setContext('')
     setEvidence('')
-    fetchData()
     setSubmitting(false)
+    fetchData()
+
+    // ── Background AI analysis ──────────────────────────────────────────
+    if (inserted?.id) {
+      const reviewId = inserted.id
+      setAnalyzingIds(prev => new Set(prev).add(reviewId))
+
+      try {
+        const [clarityRes, crearRes, revenueRes, blockerRes, standupRes] = await Promise.all([
+          supabase.from('clarity_responses').select('clarity_score').eq('user_id', profile.id).order('submitted_at', { ascending: false }).limit(1),
+          supabase.from('weekly_scores').select('total_score').eq('user_id', profile.id).order('week_number', { ascending: false }).limit(1),
+          supabase.from('revenue_events').select('amount').eq('user_id', profile.id),
+          supabase.from('blocker_logs').select('id').eq('user_id', profile.id).eq('resolved', false),
+          supabase.from('weekly_standups').select('win, revenue_action').eq('user_id', profile.id).eq('week_number', week).limit(1),
+        ])
+
+        const { data: { session } } = await supabase.auth.getSession()
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-strategic-review`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.access_token ?? ''}`,
+            },
+            body: JSON.stringify({
+              type: reviewType,
+              context: reviewContext,
+              evidence: reviewEvidence,
+              participant_name: profile.full_name || profile.email,
+              week_number: week,
+              day_of_program: getCurrentDay(),
+              clarity_score: clarityRes.data?.[0]?.clarity_score,
+              crear_total: crearRes.data?.[0]?.total_score,
+              revenue_total: (revenueRes.data ?? []).reduce((s: number, e: any) => s + Number(e.amount), 0),
+              active_blockers: blockerRes.data?.length ?? 0,
+              standup_win: standupRes.data?.[0]?.win,
+              standup_revenue_action: standupRes.data?.[0]?.revenue_action,
+            }),
+          }
+        )
+
+        if (res.ok) {
+          const { analysis } = await res.json()
+          if (analysis) {
+            await supabase.from('strategic_reviews').update({ ai_analysis: analysis }).eq('id', reviewId)
+            fetchData()
+          }
+        }
+      } catch (e) {
+        console.error('AI analysis error:', e)
+      } finally {
+        setAnalyzingIds(prev => { const s = new Set(prev); s.delete(reviewId); return s })
+      }
+    }
   }
 
   const typeMeta = (t: string) => REVIEW_TYPES.find(r => r.key === t) ?? REVIEW_TYPES[0]
@@ -136,7 +202,7 @@ export default function ReviewPage() {
                     </label>
                     <textarea
                       rows={3} value={context} onChange={e => setContext(e.target.value)}
-                      placeholder="Sé específica. Incluye números, fechas, y detalles relevantes..."
+                      placeholder="Sé específico/a. Incluye números, fechas, y detalles relevantes..."
                       className="w-full px-3 py-2 rounded-lg text-sm text-white resize-none outline-none"
                       style={{ background: '#0A0A0A', border: `1px solid #2A2A2A` }}
                       onFocus={e => (e.target.style.borderColor = GOLD)} onBlur={e => (e.target.style.borderColor = '#2A2A2A')}
@@ -194,7 +260,7 @@ export default function ReviewPage() {
                     onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}
                   >
                     <div className="flex-1 min-w-0 pr-3">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
                           style={{ background: meta.color + '22', color: meta.color }}>
                           {meta.emoji} {meta.label}
@@ -203,6 +269,18 @@ export default function ReviewPage() {
                         {hasResponse && (
                           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#4ADE8022', color: '#4ADE80' }}>
                             ✓ Respondido
+                          </span>
+                        )}
+                        {analyzingIds.has(r.id) && (
+                          <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse"
+                            style={{ background: '#7C3AED22', color: '#A78BFA' }}>
+                            <Sparkles size={9} />IA procesando...
+                          </span>
+                        )}
+                        {!analyzingIds.has(r.id) && r.ai_analysis && (
+                          <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1"
+                            style={{ background: '#7C3AED22', color: '#A78BFA' }}>
+                            <Sparkles size={9} />IA lista
                           </span>
                         )}
                       </div>

@@ -67,6 +67,7 @@ export interface StrategicReview {
   evidence: string
   carmen_response?: string
   video_url?: string
+  ai_analysis?: string
   created_at: string
 }
 

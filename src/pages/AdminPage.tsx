@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { Crown, AlertTriangle, CheckCircle2, Clock, MessageSquare, X } from 'lucide-react'
+import { Crown, AlertTriangle, CheckCircle2, Clock, MessageSquare, X, Sparkles } from 'lucide-react'
 import type { StrategicReview } from '../types'
 
 const GOLD = '#C9A84C'
@@ -23,6 +23,41 @@ interface ParticipantData {
   lastActivity: string | null
   dayInProgram: number
   igniteScore: number
+}
+
+// Renders **bold** markdown inline
+function renderMd(text: string) {
+  const parts = text.split(/\*\*([^*]+)\*\*/g)
+  return parts.map((part, i) =>
+    i % 2 === 1
+      ? <strong key={i} className="font-semibold text-white">{part}</strong>
+      : <span key={i}>{part}</span>
+  )
+}
+
+function AIAnalysisCard({ analysis }: { analysis: string }) {
+  const lines = analysis.split('\n')
+  return (
+    <div
+      className="rounded-xl p-4 mb-4"
+      style={{ background: 'linear-gradient(135deg, #1a0a2e 0%, #16082a 100%)', border: '1px solid #7C3AED44' }}
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <Sparkles size={14} className="text-purple-400" />
+        <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: '#A78BFA' }}>Pre-análisis IA para Carmen</p>
+      </div>
+      <div className="space-y-1.5">
+        {lines.map((line, i) => {
+          if (!line.trim()) return <div key={i} className="h-1" />
+          return (
+            <p key={i} className="text-gray-300 text-xs leading-relaxed">
+              {renderMd(line)}
+            </p>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 export default function AdminPage() {
@@ -312,11 +347,23 @@ export default function AdminPage() {
                       <p className="text-gray-200 text-sm mb-2">{r.context}</p>
                       {r.evidence && <p className="text-gray-400 text-xs mb-3 italic">Evidencia: {r.evidence}</p>}
 
+                      {/* AI Pre-analysis */}
+                      {r.ai_analysis
+                        ? <AIAnalysisCard analysis={r.ai_analysis} />
+                        : (
+                          <div className="rounded-lg px-3 py-2 mb-4 flex items-center gap-2"
+                            style={{ background: '#7C3AED11', border: '1px solid #7C3AED33' }}>
+                            <Sparkles size={12} className="text-purple-400 animate-pulse" />
+                            <p className="text-xs" style={{ color: '#A78BFA' }}>IA analizando este review…</p>
+                          </div>
+                        )
+                      }
+
                       {respondingTo === r.id ? (
                         <div className="space-y-3">
                           <textarea
                             rows={3} value={responseText} onChange={e => setResponseText(e.target.value)}
-                            placeholder="Tu respuesta directa a esta participante..."
+                            placeholder="Tu respuesta directa a este participante..."
                             className="w-full px-3 py-2 rounded-lg text-sm text-white resize-none outline-none"
                             style={{ background: '#0A0A0A', border: `1px solid #2A2A2A` }}
                             onFocus={e => (e.target.style.borderColor = GOLD)} onBlur={e => (e.target.style.borderColor = '#2A2A2A')}
