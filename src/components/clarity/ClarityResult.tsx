@@ -12,19 +12,19 @@ const SECTIONS_META: Record<string, { label: string; icon: string }> = {
 
 function getScoreLevel(score: number) {
   if (score >= 80) return {
-    label: 'LISTA PARA IGNITE',
+    label: 'BASE SÓLIDA — LISTO(A) PARA ESCALAR',
     color: '#4ADE80',
     message: 'Tienes una base sólida. IGNITE va a acelerar tu crecimiento exponencialmente.',
   }
   if (score >= 60) return {
-    label: 'EN CONSTRUCCIÓN',
+    label: 'CON POTENCIAL — IGNITE LO ACTIVA',
     color: GOLD,
-    message: 'Tienes los fundamentos. IGNITE va a darte la claridad y estructura que necesitas.',
+    message: 'Tienes los fundamentos clave. IGNITE te va a dar la claridad, estructura y acción que necesitas para despegar.',
   }
   return {
-    label: 'OPORTUNIDAD ENORME',
+    label: 'PUNTO DE PARTIDA PERFECTO',
     color: '#FB923C',
-    message: 'Estás en el lugar correcto. IGNITE está diseñado exactamente para donde estás ahora.',
+    message: 'Estás en el lugar correcto. IGNITE está diseñado exactamente para donde estás ahora — de aquí en adelante todo cambia.',
   }
 }
 
