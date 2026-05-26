@@ -1,8 +1,18 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import LoginPage from './pages/LoginPage'
+import PactoPage from './pages/PactoPage'
 import DashboardPage from './pages/DashboardPage'
+import CREARPage from './pages/CREARPage'
+import IdentityPage from './pages/IdentityPage'
+import StandupPage from './pages/StandupPage'
+import BlockerPage from './pages/BlockerPage'
+import ReviewPage from './pages/ReviewPage'
+import RevenuePage from './pages/RevenuePage'
 import AdminPage from './pages/AdminPage'
+import AppLayout from './components/layout/AppLayout'
+
+const GOLD = '#C9A84C'
 
 function LoadingScreen() {
   return (
@@ -10,7 +20,7 @@ function LoadingScreen() {
       <div className="text-center">
         <div
           className="w-8 h-8 rounded-full animate-spin mx-auto mb-3"
-          style={{ border: '2px solid #C9A84C', borderTopColor: 'transparent' }}
+          style={{ border: `2px solid ${GOLD}`, borderTopColor: 'transparent' }}
         />
         <p className="text-gray-400 text-sm">Cargando...</p>
       </div>
@@ -18,11 +28,11 @@ function LoadingScreen() {
   )
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function RequireAuth() {
   const { session, loading } = useAuth()
   if (loading) return <LoadingScreen />
   if (!session) return <Navigate to="/login" replace />
-  return <>{children}</>
+  return <Outlet />
 }
 
 function AppRoutes() {
@@ -31,19 +41,36 @@ function AppRoutes() {
 
   return (
     <Routes>
+      {/* Público */}
       <Route
         path="/login"
         element={session ? <Navigate to="/dashboard" replace /> : <LoginPage />}
       />
+
+      {/* Protegido sin sidebar (onboarding) */}
+      <Route element={<RequireAuth />}>
+        <Route path="/pacto" element={<PactoPage />} />
+      </Route>
+
+      {/* Protegido con sidebar (app principal) */}
+      <Route element={<RequireAuth />}>
+        <Route element={<AppLayout />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/crear" element={<CREARPage />} />
+          <Route path="/identidad" element={<IdentityPage />} />
+          <Route path="/standup" element={<StandupPage />} />
+          <Route path="/bloqueos" element={<BlockerPage />} />
+          <Route path="/reviews" element={<ReviewPage />} />
+          <Route path="/revenue" element={<RevenuePage />} />
+          <Route path="/admin" element={<AdminPage />} />
+        </Route>
+      </Route>
+
+      {/* Redirect raíz */}
       <Route
-        path="/dashboard"
-        element={<ProtectedRoute><DashboardPage /></ProtectedRoute>}
+        path="/"
+        element={<Navigate to={session ? '/dashboard' : '/login'} replace />}
       />
-      <Route
-        path="/admin"
-        element={<ProtectedRoute><AdminPage /></ProtectedRoute>}
-      />
-      <Route path="/" element={<Navigate to={session ? '/dashboard' : '/login'} replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
