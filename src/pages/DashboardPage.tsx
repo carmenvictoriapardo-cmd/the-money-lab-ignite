@@ -36,18 +36,16 @@ export default function DashboardPage() {
   const { profile, getCurrentDay, getCurrentWeek } = useAuth()
   const navigate = useNavigate()
   const [data, setData] = useState<DashData | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [dataLoading, setDataLoading] = useState(false)
 
   const day = getCurrentDay()
   const week = getCurrentWeek()
   const dayPct = Math.round((day / 90) * 100)
 
   useEffect(() => {
-    if (profile?.onboarded) {
-      setLoading(true)   // always reset loading before a fresh fetch
+    if (profile?.id && profile?.onboarded) {
+      setDataLoading(true)
       fetchDashData()
-    } else {
-      setLoading(false)
     }
   }, [profile?.id])
 
@@ -82,14 +80,14 @@ export default function DashboardPage() {
     const standupPct = week > 0 ? Math.min(100, Math.round(((latestStandup ? 1 : 0) / week) * 100)) : 0
 
     setData({ latestCREAR, latestStandup, revenueTotal, activeBlockers, lastActivityDays, standupPct, latestIdentityConf })
-    setLoading(false)
+    setDataLoading(false)
   }
 
   // ── Not onboarded → show clarity form ──────────────────
   if (!profile?.onboarded) return <ClarityForm />
 
-  // ── Loading ────────────────────────────────────────────
-  if (loading) {
+  // ── Loading data ────────────────────────────────────────
+  if (dataLoading || !data) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#0A0A0A' }}>
         <div className="w-6 h-6 rounded-full animate-spin" style={{ border: `2px solid ${GOLD}`, borderTopColor: 'transparent' }} />
@@ -97,7 +95,7 @@ export default function DashboardPage() {
     )
   }
 
-  const { latestCREAR, revenueTotal, activeBlockers, lastActivityDays, standupPct, latestIdentityConf } = data!
+  const { latestCREAR, revenueTotal, activeBlockers, lastActivityDays, standupPct, latestIdentityConf } = data
   const crearTotal = latestCREAR?.total_score ?? 0
   const igniteScore = calcIgniteScore(crearTotal, latestIdentityConf * 10, revenueTotal > 0, standupPct)
   const momentum = getMomentum(lastActivityDays)
