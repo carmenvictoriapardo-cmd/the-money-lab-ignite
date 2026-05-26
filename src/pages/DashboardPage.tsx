@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import ClarityForm from '../components/clarity/ClarityForm'
-import { ArrowRight, Flame, TrendingUp, DollarSign, Zap, Shield, Star, Target } from 'lucide-react'
-import type { WeeklyScore, WeeklyStandup } from '../types'
+import { ArrowRight, Flame, TrendingUp, DollarSign, Zap, Shield, Star, Target, Sparkles, Loader2, RefreshCw } from 'lucide-react'
+import type { WeeklyScore, WeeklyStandup, WeeklyInsight } from '../types'
 
 const GOLD = '#C9A84C'
 const SURFACE = '#111111'
@@ -37,6 +37,8 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   const [data, setData] = useState<DashData | null>(null)
   const [dataLoading, setDataLoading] = useState(false)
+  const [insight, setInsight] = useState<WeeklyInsight | null>(null)
+  const [generatingInsight, setGeneratingInsight] = useState(false)
 
   const day = getCurrentDay()
   const week = getCurrentWeek()
@@ -53,12 +55,13 @@ export default function DashboardPage() {
     if (!profile?.id) return
     const uid = profile.id
 
-    const [crearRes, standupRes, revenueRes, blockerRes, identityRes] = await Promise.all([
+    const [crearRes, standupRes, revenueRes, blockerRes, identityRes, insightRes] = await Promise.all([
       supabase.from('weekly_scores').select('*').eq('user_id', uid).order('week_number', { ascending: false }).limit(1),
       supabase.from('weekly_standups').select('*').eq('user_id', uid).order('week_number', { ascending: false }).limit(1),
       supabase.from('revenue_events').select('amount').eq('user_id', uid),
       supabase.from('blocker_logs').select('id').eq('user_id', uid).eq('resolved', false),
       supabase.from('identity_tracker').select('confidence_level, created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
+      supabase.from('weekly_insights').select('*').eq('user_id', uid).order('week_number', { ascending: false }).limit(1),
     ])
 
     const latestCREAR = crearRes.data?.[0] ?? null
@@ -79,8 +82,72 @@ export default function DashboardPage() {
 
     const standupPct = week > 0 ? Math.min(100, Math.round(((latestStandup ? 1 : 0) / week) * 100)) : 0
 
+    // Load latest insight
+    if (insightRes.data?.[0]) setInsight(insightRes.data[0] as WeeklyInsight)
+
     setData({ latestCREAR, latestStandup, revenueTotal, activeBlockers, lastActivityDays, standupPct, latestIdentityConf })
     setDataLoading(false)
+  }
+
+  async function generateInsight() {
+    if (!profile?.id || !data) return
+    setGeneratingInsight(true)
+
+    // Gather full week data for the AI
+    const uid = profile.id
+    const [prevCREAR, activeBlockersFull, weekRevenue] = await Promise.all([
+      supabase.from('weekly_scores').select('crear_scores, total_score').eq('user_id', uid)
+        .order('week_number', { ascending: false }).limit(2),
+      supabase.from('blocker_logs').select('blocker_type, description').eq('user_id', uid).eq('resolved', false),
+      supabase.from('revenue_events').select('amount').eq('user_id', uid)
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+    ])
+
+    const weekRevenueTotal = (weekRevenue.data ?? []).reduce((s, e) => s + Number(e.amount), 0)
+    const crearHistory = prevCREAR.data ?? []
+
+    const payload = {
+      week_number: week,
+      day_of_program: day,
+      participant_name: profile.full_name || 'Participante',
+      standup: data.latestStandup ? {
+        win: data.latestStandup.win,
+        revenue_action: data.latestStandup.revenue_action,
+        needs_from_mentor: data.latestStandup.needs_from_carmen,
+      } : undefined,
+      crear_current: crearHistory[0]?.crear_scores ? {
+        ...crearHistory[0].crear_scores,
+        total: crearHistory[0].total_score,
+      } : undefined,
+      crear_previous: crearHistory[1]?.crear_scores ? {
+        ...crearHistory[1].crear_scores,
+        total: crearHistory[1].total_score,
+      } : undefined,
+      revenue_this_week: weekRevenueTotal,
+      revenue_total: data.revenueTotal,
+      active_blockers: (activeBlockersFull.data ?? []).map(b => ({
+        type: b.blocker_type,
+        description: b.description,
+      })),
+      resolved_blockers_this_week: 0,
+      identity_confidence: data.latestIdentityConf || undefined,
+    }
+
+    const { data: fnData, error: fnError } = await supabase.functions.invoke(
+      'generate-weekly-insight', { body: payload }
+    )
+
+    if (!fnError && fnData?.insight) {
+      // Save to DB (upsert by week)
+      const { data: saved } = await supabase
+        .from('weekly_insights')
+        .upsert({ user_id: uid, week_number: week, insight: fnData.insight },
+          { onConflict: 'user_id,week_number' })
+        .select()
+        .single()
+      if (saved) setInsight(saved as WeeklyInsight)
+    }
+    setGeneratingInsight(false)
   }
 
   // ── Not onboarded → show clarity form ──────────────────
@@ -202,6 +269,88 @@ export default function DashboardPage() {
             </motion.button>
           ))}
         </div>
+
+        {/* ─── Insight Engine semanal ──────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}
+          className="rounded-2xl mb-6 overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, #0d0d1f 0%, #1a1030 100%)', border: '1px solid #7C3AED44' }}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 pt-5 pb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} style={{ color: '#A78BFA' }} />
+              <p className="text-sm font-semibold" style={{ color: '#A78BFA' }}>
+                Análisis Semanal IA — Semana {week}
+              </p>
+            </div>
+            <button
+              onClick={generateInsight}
+              disabled={generatingInsight}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
+              style={{ background: '#7C3AED22', color: '#A78BFA', border: '1px solid #7C3AED44' }}
+            >
+              {generatingInsight
+                ? <><Loader2 size={12} className="animate-spin" /> Analizando...</>
+                : insight
+                  ? <><RefreshCw size={12} /> Regenerar</>
+                  : <><Sparkles size={12} /> Generar análisis</>
+              }
+            </button>
+          </div>
+
+          <AnimatePresence mode="wait">
+            {generatingInsight ? (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="px-5 pb-5"
+              >
+                <p className="text-gray-400 text-xs mb-3">
+                  Analizando tu standup, C.R.E.A.R., bloqueos y revenue de la semana...
+                </p>
+                <div className="space-y-2">
+                  {[90, 70, 85, 60, 75].map((w, i) => (
+                    <motion.div
+                      key={i}
+                      className="h-2 rounded-full"
+                      style={{ background: '#7C3AED22', width: `${w}%` }}
+                      animate={{ opacity: [0.3, 0.8, 0.3] }}
+                      transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.15 }}
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            ) : insight ? (
+              <motion.div
+                key="insight"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="px-5 pb-5"
+              >
+                <div
+                  className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap"
+                  style={{ fontFamily: 'inherit' }}
+                >
+                  {insight.insight}
+                </div>
+                <p className="text-gray-600 text-xs mt-3">
+                  Generado el {new Date(insight.generated_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
+                </p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="px-5 pb-5 text-center py-6"
+              >
+                <p className="text-gray-500 text-sm">
+                  Completa al menos tu Standup o C.R.E.A.R. de la semana y genera tu análisis.<br />
+                  La IA conectará todos tus datos y te dará el diagnóstico que necesitas.
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
         {/* El Pacto status */}
         <motion.div

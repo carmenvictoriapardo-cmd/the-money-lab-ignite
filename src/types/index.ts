@@ -131,6 +131,14 @@ export interface AdminNote {
   created_at: string
 }
 
+export interface WeeklyInsight {
+  id: string
+  user_id: string
+  week_number: number
+  insight: string
+  generated_at: string
+}
+
 // ─── Computed/derived types ───────────────────────────────
 export interface ParticipantSummary {
   profile: User
