@@ -37,14 +37,26 @@ export default function ClarityForm() {
     setError(null)
     const { total, breakdown } = calculateClarityScore(responses)
 
-    // Get user ID directly from auth session (bypasses profile null issue)
+    // Step 1: get auth user directly (never depends on profile state)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      setError('Error de autenticación. Por favor recarga la página.')
+      setError('Error de autenticación. Por favor recarga la página e intenta de nuevo.')
       setSubmitting(false)
       return
     }
 
+    // Step 2: ensure the profile row exists (FK constraint requires it)
+    // The DB trigger should create it, but if it didn't fire we create it here
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .upsert({ id: user.id, email: user.email }, { onConflict: 'id', ignoreDuplicates: true })
+
+    if (profileError) {
+      console.warn('Profile upsert warning (non-fatal):', profileError)
+      // Continue anyway — the row may already exist
+    }
+
+    // Step 3: insert clarity response
     const { error: insertError } = await supabase.from('clarity_responses').insert({
       user_id: user.id,
       clarity_score: total,
@@ -54,7 +66,7 @@ export default function ClarityForm() {
 
     if (insertError) {
       console.error('Error guardando respuestas:', insertError)
-      setError(`No se pudieron guardar tus respuestas: ${insertError.message}`)
+      setError(`Error al guardar: ${insertError.message}`)
       setSubmitting(false)
       return
     }
