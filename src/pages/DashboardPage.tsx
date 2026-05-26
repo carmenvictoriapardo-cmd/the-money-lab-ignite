@@ -43,8 +43,12 @@ export default function DashboardPage() {
   const dayPct = Math.round((day / 90) * 100)
 
   useEffect(() => {
-    if (profile?.onboarded) fetchDashData()
-    else setLoading(false)
+    if (profile?.onboarded) {
+      setLoading(true)   // always reset loading before a fresh fetch
+      fetchDashData()
+    } else {
+      setLoading(false)
+    }
   }, [profile?.id])
 
   async function fetchDashData() {
