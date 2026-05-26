@@ -12,6 +12,7 @@ import RevenuePage from './pages/RevenuePage'
 import AdminPage from './pages/AdminPage'
 import EvidencePage from './pages/EvidencePage'
 import DailyActionPage from './pages/DailyActionPage'
+import OfferBuilderPage from './pages/OfferBuilderPage'
 import AppLayout from './components/layout/AppLayout'
 
 const GOLD = '#C9A84C'
@@ -65,6 +66,7 @@ function AppRoutes() {
           <Route path="/reviews" element={<ReviewPage />} />
           <Route path="/revenue" element={<RevenuePage />} />
           <Route path="/accion" element={<DailyActionPage />} />
+          <Route path="/oferta" element={<OfferBuilderPage />} />
           <Route path="/evidencia" element={<EvidencePage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Route>

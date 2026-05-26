@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import {
   LayoutDashboard, BarChart3, Star, Zap, Shield,
-  Target, DollarSign, Crown, LogOut, Flame, Award,
+  Target, DollarSign, Crown, LogOut, Flame, Award, Lightbulb,
 } from 'lucide-react'
 
 const GOLD = '#C9A84C'
@@ -13,6 +13,7 @@ const BORDER = '#1E1E1E'
 const NAV_ITEMS = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Inicio' },
   { to: '/accion',    icon: Flame,           label: 'Acción' },
+  { to: '/oferta',    icon: Lightbulb,       label: 'Mi Oferta' },
   { to: '/crear',     icon: BarChart3,       label: 'C.R.E.A.R.' },
   { to: '/identidad', icon: Star,            label: 'Identidad' },
   { to: '/standup',   icon: Zap,             label: 'Standup' },

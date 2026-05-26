@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import ClarityForm from '../components/clarity/ClarityForm'
-import { ArrowRight, Flame, TrendingUp, DollarSign, Zap, Shield, Star, Target, Sparkles, Loader2, RefreshCw } from 'lucide-react'
+import { ArrowRight, Flame, TrendingUp, DollarSign, Zap, Shield, Star, Target, Sparkles, Loader2, RefreshCw, Lightbulb } from 'lucide-react'
 import type { WeeklyScore, WeeklyStandup, WeeklyInsight } from '../types'
 
 const GOLD = '#C9A84C'
@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const [generatingInsight, setGeneratingInsight] = useState(false)
   const [dailyStreak, setDailyStreak] = useState(0)
   const [todayDone, setTodayDone] = useState(false)
+  const [offerOneLiner, setOfferOneLiner] = useState<string | null>(null)
 
   const day = getCurrentDay()
   const week = getCurrentWeek()
@@ -58,7 +59,7 @@ export default function DashboardPage() {
     const uid = profile.id
 
     const today = new Date().toISOString().split('T')[0]
-    const [crearRes, standupRes, revenueRes, blockerRes, identityRes, insightRes, dailyRes] = await Promise.all([
+    const [crearRes, standupRes, revenueRes, blockerRes, identityRes, insightRes, dailyRes, offerRes] = await Promise.all([
       supabase.from('weekly_scores').select('*').eq('user_id', uid).order('week_number', { ascending: false }).limit(1),
       supabase.from('weekly_standups').select('*').eq('user_id', uid).order('week_number', { ascending: false }).limit(1),
       supabase.from('revenue_events').select('amount').eq('user_id', uid),
@@ -66,6 +67,7 @@ export default function DashboardPage() {
       supabase.from('identity_tracker').select('confidence_level, created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
       supabase.from('weekly_insights').select('*').eq('user_id', uid).order('week_number', { ascending: false }).limit(1),
       supabase.from('daily_revenue_actions').select('action_date, completed').eq('user_id', uid).order('action_date', { ascending: false }).limit(14),
+      supabase.from('offer_builder').select('one_liner').eq('user_id', uid).maybeSingle(),
     ])
 
     const latestCREAR = crearRes.data?.[0] ?? null
@@ -102,6 +104,9 @@ export default function DashboardPage() {
       if (diff === 0) { streak++; checkDate = new Date(checkDate.getTime() - msPerDay) } else break
     }
     setDailyStreak(streak)
+
+    // Offer one-liner
+    setOfferOneLiner((offerRes.data as any)?.one_liner ?? null)
 
     setData({ latestCREAR, latestStandup, revenueTotal, activeBlockers, lastActivityDays, standupPct, latestIdentityConf })
     setDataLoading(false)
@@ -237,6 +242,27 @@ export default function DashboardPage() {
             </div>
           </div>
           <ArrowRight size={16} style={{ color: todayDone ? '#4ADE80' : GOLD }} />
+        </motion.button>
+
+        {/* Offer Banner */}
+        <motion.button
+          initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
+          onClick={() => navigate('/oferta')}
+          className="w-full rounded-xl px-4 py-3 mb-4 flex items-center justify-between hover:opacity-90 transition-all"
+          style={{ background: '#7C3AED0A', border: '1px solid #7C3AED33' }}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <Lightbulb size={16} style={{ color: '#A78BFA' }} className="flex-shrink-0" />
+            <div className="text-left min-w-0">
+              <p className="text-sm font-medium truncate" style={{ color: '#A78BFA' }}>
+                {offerOneLiner ? offerOneLiner : 'Define tu oferta irresistible →'}
+              </p>
+              {!offerOneLiner && (
+                <p className="text-xs text-gray-600">5 preguntas · la IA construye el resto</p>
+              )}
+            </div>
+          </div>
+          <ArrowRight size={14} style={{ color: '#7C3AED' }} className="flex-shrink-0 ml-2" />
         </motion.button>
 
         {/* Top row: IGNITE Score + Momentum + Progress */}
