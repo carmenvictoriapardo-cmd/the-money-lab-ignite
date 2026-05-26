@@ -180,10 +180,39 @@ export default function AdminPage() {
 
   async function submitResponse(reviewId: string) {
     if (!responseText.trim()) return
-    await supabase.from('strategic_reviews').update({
-      carmen_response: responseText.trim(),
-      video_url: videoUrl.trim() || null,
-    }).eq('id', reviewId)
+
+    // Guardar la respuesta
+    const { data: updated } = await supabase
+      .from('strategic_reviews')
+      .update({
+        carmen_response: responseText.trim(),
+        video_url: videoUrl.trim() || null,
+      })
+      .eq('id', reviewId)
+      .select('user_id')
+      .single()
+
+    // Enviar push notification al participante
+    if (updated?.user_id) {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-send`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            user_ids: [updated.user_id],
+            title: '✨ Carmen respondió tu review',
+            body: 'Tienes una respuesta nueva de Carmen en tu programa. ¡Ábrela ahora!',
+            url: '/reviews',
+            tag: 'carmen-response',
+          }),
+        }).catch(() => {}) // silencioso si falla
+      }
+    }
+
     setRespondingTo(null)
     setResponseText('')
     setVideoUrl('')

@@ -3,8 +3,9 @@ import { useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import {
   LayoutDashboard, BarChart3, Star, Zap, Shield,
-  Target, DollarSign, Crown, LogOut, Flame, Award, Lightbulb, Users, KeyRound, X,
+  Target, DollarSign, Crown, LogOut, Flame, Award, Lightbulb, Users, KeyRound, X, Bell, BellOff,
 } from 'lucide-react'
+import { usePushNotifications } from '../../hooks/usePushNotifications'
 
 const GOLD = '#C9A84C'
 const BG = '#0A0A0A'
@@ -31,6 +32,9 @@ export default function AppLayout() {
   const day = getCurrentDay()
   const pct = Math.round((day / 90) * 100)
 
+  const { permission, subscribing, subscribe } = usePushNotifications()
+  const [showNotifBanner, setShowNotifBanner] = useState(false)
+  const [notifDone, setNotifDone] = useState(false)
   const [showPwModal, setShowPwModal] = useState(false)
   const [newPw, setNewPw] = useState('')
   const [confirmPw, setConfirmPw] = useState('')
@@ -40,6 +44,11 @@ export default function AppLayout() {
   async function handleSignOut() {
     await signOut()
     navigate('/login')
+  }
+
+  async function handleEnableNotifications() {
+    const ok = await subscribe()
+    if (ok) { setNotifDone(true); setShowNotifBanner(false) }
   }
 
   async function handleSetPassword() {
@@ -215,7 +224,7 @@ export default function AppLayout() {
               <p className="text-gray-500 text-xs truncate">{profile?.email}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               onClick={handleSignOut}
               className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors"
@@ -227,17 +236,88 @@ export default function AppLayout() {
             <button
               onClick={() => { setShowPwModal(true); setPwMsg(null) }}
               className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors"
-              title="Definir contraseña de acceso"
+              title="Definir contraseña"
             >
               <KeyRound size={13} />
-              Contraseña
+              Clave
             </button>
+            {permission !== 'unsupported' && (
+              <>
+                <span className="text-gray-700">·</span>
+                <button
+                  onClick={() => permission === 'granted' ? null : setShowNotifBanner(true)}
+                  className="flex items-center gap-1.5 text-xs transition-colors"
+                  style={{ color: permission === 'granted' ? '#4ADE80' : '#6B7280' }}
+                  title={permission === 'granted' ? 'Notificaciones activas' : 'Activar notificaciones'}
+                >
+                  {permission === 'granted'
+                    ? <><Bell size={13} /><span>Notif ✓</span></>
+                    : <><BellOff size={13} /><span>Notif</span></>
+                  }
+                </button>
+              </>
+            )}
           </div>
         </div>
       </aside>
 
       {/* ─── Main content ──────────────────────────────── */}
       <main className="flex-1 overflow-auto pb-20 md:pb-0">
+        {/* Notification permission banner */}
+        {permission === 'default' && !notifDone && !showNotifBanner && (
+          <div
+            className="mx-4 mt-3 px-4 py-3 rounded-xl flex items-center gap-3 cursor-pointer"
+            style={{ background: '#C9A84C18', border: '1px solid #C9A84C44' }}
+            onClick={() => setShowNotifBanner(true)}
+          >
+            <Bell size={16} style={{ color: GOLD, flexShrink: 0 }} />
+            <p className="text-xs flex-1" style={{ color: GOLD }}>
+              Activa las notificaciones para recibir tus reminders diarios 🔔
+            </p>
+            <button className="text-xs font-semibold px-3 py-1 rounded-lg" style={{ background: GOLD, color: '#0A0A0A' }}>
+              Activar
+            </button>
+          </div>
+        )}
+
+        {showNotifBanner && (
+          <div
+            className="mx-4 mt-3 px-4 py-4 rounded-xl"
+            style={{ background: '#1A1A1A', border: `1px solid ${GOLD}66` }}
+          >
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Bell size={15} style={{ color: GOLD }} />
+                <p className="text-white text-sm font-semibold">Activar notificaciones</p>
+              </div>
+              <button onClick={() => setShowNotifBanner(false)} className="text-gray-500 hover:text-white">
+                <X size={14} />
+              </button>
+            </div>
+            <p className="text-gray-400 text-xs mb-3">Recibirás reminders para tu standup, tu acción diaria y tu racha. Puedes desactivarlas cuando quieras.</p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleEnableNotifications}
+                disabled={subscribing}
+                className="flex-1 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
+                style={{ background: GOLD, color: '#0A0A0A' }}
+              >
+                {subscribing ? 'Activando...' : '🔔 Activar ahora'}
+              </button>
+              <button onClick={() => setShowNotifBanner(false)} className="px-3 py-2 rounded-lg text-xs text-gray-500 hover:text-white">
+                Ahora no
+              </button>
+            </div>
+          </div>
+        )}
+
+        {notifDone && (
+          <div className="mx-4 mt-3 px-4 py-2.5 rounded-xl flex items-center gap-2" style={{ background: '#4ADE8011', border: '1px solid #4ADE8044' }}>
+            <Bell size={14} className="text-green-400" />
+            <p className="text-green-400 text-xs">¡Notificaciones activadas! Recibirás tus reminders diarios.</p>
+          </div>
+        )}
+
         <Outlet />
       </main>
 
