@@ -15,6 +15,7 @@ export default function ClarityForm() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [result, setResult] = useState<{ total: number; breakdown: ScoreBreakdown } | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const sectionKey = SECTIONS[currentSection].key
   const sectionQuestions = CLARITY_QUESTIONS.filter(q => q.sectionKey === sectionKey)
@@ -33,19 +34,33 @@ export default function ClarityForm() {
 
   async function handleSubmit() {
     setSubmitting(true)
+    setError(null)
     const { total, breakdown } = calculateClarityScore(responses)
 
-    const { error } = await supabase.from('clarity_responses').insert({
-      user_id: profile?.id,
+    // Get user ID directly from auth session (bypasses profile null issue)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      setError('Error de autenticación. Por favor recarga la página.')
+      setSubmitting(false)
+      return
+    }
+
+    const { error: insertError } = await supabase.from('clarity_responses').insert({
+      user_id: user.id,
       clarity_score: total,
       score_breakdown: breakdown,
       responses,
     })
 
-    if (!error) {
-      setResult({ total, breakdown })
-      setSubmitted(true)
+    if (insertError) {
+      console.error('Error guardando respuestas:', insertError)
+      setError(`No se pudieron guardar tus respuestas: ${insertError.message}`)
+      setSubmitting(false)
+      return
     }
+
+    setResult({ total, breakdown })
+    setSubmitted(true)
     setSubmitting(false)
   }
 
@@ -170,6 +185,13 @@ export default function ClarityForm() {
             </div>
           ))}
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="mt-4 px-4 py-3 rounded-lg text-sm text-red-300" style={{ background: '#ff000022', border: '1px solid #ff000055' }}>
+            ⚠️ {error}
+          </div>
+        )}
 
         {/* Navigation */}
         <div className="flex gap-4 mt-6">
