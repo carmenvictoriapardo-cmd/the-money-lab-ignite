@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import {
   LayoutDashboard, BarChart3, Star, Zap, Shield,
-  Target, DollarSign, Crown, LogOut, Flame,
+  Target, DollarSign, Crown, LogOut, Flame, Award,
 } from 'lucide-react'
 
 const GOLD = '#C9A84C'
@@ -18,6 +18,7 @@ const NAV_ITEMS = [
   { to: '/bloqueos',  icon: Shield,          label: 'Bloqueos' },
   { to: '/reviews',   icon: Target,          label: 'Reviews' },
   { to: '/revenue',   icon: DollarSign,      label: 'Revenue' },
+  { to: '/evidencia', icon: Award,           label: 'Evidencias' },
 ]
 
 export default function AppLayout() {

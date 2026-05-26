@@ -20,6 +20,7 @@ interface ParticipantData {
   crearTotal: number
   revenueTotal: number
   activeBlockers: number
+  evidenceCount: number
   lastActivity: string | null
   dayInProgram: number
   igniteScore: number
@@ -90,17 +91,19 @@ export default function AdminPage() {
 
     const enriched: ParticipantData[] = await Promise.all(
       profilesData.map(async (p: any) => {
-        const [clarityRes, crearRes, revenueRes, blockerRes] = await Promise.all([
+        const [clarityRes, crearRes, revenueRes, blockerRes, evidenceRes] = await Promise.all([
           supabase.from('clarity_responses').select('clarity_score').eq('user_id', p.id).order('submitted_at', { ascending: false }).limit(1),
           supabase.from('weekly_scores').select('total_score, created_at').eq('user_id', p.id).order('week_number', { ascending: false }).limit(1),
           supabase.from('revenue_events').select('amount').eq('user_id', p.id),
           supabase.from('blocker_logs').select('id').eq('user_id', p.id).eq('resolved', false),
+          supabase.from('evidence_items').select('id').eq('user_id', p.id),
         ])
 
         const clarityScore = clarityRes.data?.[0]?.clarity_score ?? 0
         const crearTotal = crearRes.data?.[0]?.total_score ?? 0
         const revenueTotal = (revenueRes.data ?? []).reduce((s: number, e: any) => s + Number(e.amount), 0)
         const activeBlockers = blockerRes.data?.length ?? 0
+        const evidenceCount = evidenceRes.data?.length ?? 0
         const lastActivity = crearRes.data?.[0]?.created_at ?? null
 
         const dayInProgram = p.program_start_date
@@ -109,7 +112,7 @@ export default function AdminPage() {
 
         const igniteScore = Math.round(crearTotal * 0.4 + (revenueTotal > 0 ? 100 : 0) * 0.3 + 30)
 
-        return { id: p.id, email: p.email, full_name: p.full_name, program_start_date: p.program_start_date, el_pacto_signed: p.el_pacto_signed, onboarded: p.onboarded, clarityScore, crearTotal, revenueTotal, activeBlockers, lastActivity, dayInProgram, igniteScore }
+        return { id: p.id, email: p.email, full_name: p.full_name, program_start_date: p.program_start_date, el_pacto_signed: p.el_pacto_signed, onboarded: p.onboarded, clarityScore, crearTotal, revenueTotal, activeBlockers, evidenceCount, lastActivity, dayInProgram, igniteScore }
       })
     )
     setParticipants(enriched)
@@ -272,6 +275,7 @@ export default function AdminPage() {
                       {!p.onboarded && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#F8712222', color: '#FB923C' }}>Pendiente</span>}
                       {p.activeBlockers > 0 && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#EF444422', color: '#F87171' }}>⚠️ {p.activeBlockers}</span>}
                       {p.revenueTotal > 0 && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#4ADE8022', color: '#4ADE80' }}>💰</span>}
+                      {p.evidenceCount > 0 && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#C9A84C22', color: '#C9A84C' }}>🏆 {p.evidenceCount}</span>}
                     </div>
                     <span className="text-gray-500 text-xs">{selected === p.id ? '▲' : '▼'}</span>
                   </div>
@@ -285,6 +289,7 @@ export default function AdminPage() {
                         { label: 'C.R.E.A.R.', value: p.crearTotal > 0 ? `${p.crearTotal}%` : '—' },
                         { label: 'Revenue', value: `$${p.revenueTotal.toLocaleString()}` },
                         { label: 'Bloqueos activos', value: String(p.activeBlockers) },
+                        { label: 'Evidencias', value: String(p.evidenceCount) },
                       ].map(s => (
                         <div key={s.label} className="rounded-lg p-3 text-center" style={{ background: '#0A0A0A', border: `1px solid #2A2A2A` }}>
                           <p className="font-bold text-white">{s.value}</p>
