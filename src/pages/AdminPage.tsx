@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { Crown, AlertTriangle, CheckCircle2, Clock, MessageSquare, X, Sparkles } from 'lucide-react'
+import { Crown, AlertTriangle, CheckCircle2, Clock, MessageSquare, X, Sparkles, UserPlus, Trash2, ShieldCheck } from 'lucide-react'
 import type { StrategicReview } from '../types'
 
 const GOLD = '#C9A84C'
@@ -70,15 +70,59 @@ export default function AdminPage() {
   const [respondingTo, setRespondingTo] = useState<string | null>(null)
   const [responseText, setResponseText] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
-  const [tab, setTab] = useState<'cohort' | 'reviews'>('cohort')
+  const [tab, setTab] = useState<'cohort' | 'reviews' | 'acceso'>('cohort')
+
+  // Acceso tab state
+  const [invitedList, setInvitedList] = useState<{ id: string; email: string; full_name: string | null; notes: string | null; invited_at: string }[]>([])
+  const [newEmail, setNewEmail] = useState('')
+  const [newName, setNewName] = useState('')
+  const [newNotes, setNewNotes] = useState('')
+  const [addingAccess, setAddingAccess] = useState(false)
+  const [accessMsg, setAccessMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
 
   useEffect(() => {
     if (profile?.role === 'admin') { fetchAll() }
   }, [profile?.id])
 
   async function fetchAll() {
-    await Promise.all([fetchParticipants(), fetchPendingReviews()])
+    await Promise.all([fetchParticipants(), fetchPendingReviews(), fetchInvited()])
     setLoading(false)
+  }
+
+  async function fetchInvited() {
+    const { data } = await supabase
+      .from('invited_participants')
+      .select('*')
+      .order('invited_at', { ascending: false })
+    if (data) setInvitedList(data)
+  }
+
+  async function addInvited() {
+    if (!newEmail.trim()) return
+    setAddingAccess(true)
+    setAccessMsg(null)
+    const { error } = await supabase.from('invited_participants').insert({
+      email: newEmail.toLowerCase().trim(),
+      full_name: newName.trim() || null,
+      notes: newNotes.trim() || null,
+    })
+    if (error) {
+      setAccessMsg({ type: 'err', text: error.message.includes('unique') ? 'Ese email ya está en la lista.' : error.message })
+    } else {
+      setAccessMsg({ type: 'ok', text: `✓ Acceso habilitado para ${newEmail.trim()}` })
+      setNewEmail('')
+      setNewName('')
+      setNewNotes('')
+      fetchInvited()
+    }
+    setAddingAccess(false)
+    setTimeout(() => setAccessMsg(null), 4000)
+  }
+
+  async function removeInvited(id: string, email: string) {
+    if (!confirm(`¿Quitar acceso a ${email}?`)) return
+    await supabase.from('invited_participants').delete().eq('id', id)
+    fetchInvited()
   }
 
   async function fetchParticipants() {
@@ -177,7 +221,7 @@ export default function AdminPage() {
             <p className="text-xs tracking-[0.2em] uppercase" style={{ color: '#F59E0B' }}>Portal de Carmen</p>
           </div>
           <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-          <p className="text-gray-400 text-sm mt-1">{participants.length} participantes · {pendingReviews.length} reviews pendientes</p>
+          <p className="text-gray-400 text-sm mt-1">{participants.length} participantes · {pendingReviews.length} reviews pendientes · {invitedList.length} con acceso</p>
         </motion.div>
 
         {/* Risk alerts */}
@@ -200,8 +244,12 @@ export default function AdminPage() {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
-          {[{ key: 'cohort', label: `Cohort (${participants.length})` }, { key: 'reviews', label: `Reviews pendientes (${pendingReviews.length})` }].map(t => (
+        <div className="flex gap-2 mb-6 flex-wrap">
+          {[
+            { key: 'cohort', label: `Cohort (${participants.length})` },
+            { key: 'reviews', label: `Reviews (${pendingReviews.length})` },
+            { key: 'acceso', label: `Acceso (${invitedList.length})` },
+          ].map(t => (
             <button
               key={t.key}
               onClick={() => setTab(t.key as any)}
@@ -312,6 +360,133 @@ export default function AdminPage() {
                 )}
               </motion.div>
             ))}
+          </div>
+        )}
+
+        {/* ACCESO TAB */}
+        {tab === 'acceso' && (
+          <div className="space-y-6">
+
+            {/* Add form */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl p-6"
+              style={{ background: SURFACE, border: `1px solid ${BORDER}` }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <ShieldCheck size={16} style={{ color: GOLD }} />
+                <h2 className="text-white font-semibold">Habilitar acceso</h2>
+              </div>
+              <p className="text-gray-400 text-xs mb-4">
+                Solo las personas en esta lista pueden solicitar un enlace de acceso. Tu email de admin siempre tiene acceso.
+              </p>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1 uppercase tracking-wider">Email *</label>
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={e => setNewEmail(e.target.value)}
+                    placeholder="participante@email.com"
+                    className="w-full px-3 py-2.5 rounded-lg text-sm text-white outline-none transition-colors"
+                    style={{ background: '#0A0A0A', border: '1px solid #2A2A2A' }}
+                    onFocus={e => (e.target.style.borderColor = GOLD)}
+                    onBlur={e => (e.target.style.borderColor = '#2A2A2A')}
+                    onKeyDown={e => e.key === 'Enter' && addInvited()}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1 uppercase tracking-wider">Nombre</label>
+                    <input
+                      type="text"
+                      value={newName}
+                      onChange={e => setNewName(e.target.value)}
+                      placeholder="Nombre completo"
+                      className="w-full px-3 py-2.5 rounded-lg text-sm text-white outline-none"
+                      style={{ background: '#0A0A0A', border: '1px solid #2A2A2A' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1 uppercase tracking-wider">Notas</label>
+                    <input
+                      type="text"
+                      value={newNotes}
+                      onChange={e => setNewNotes(e.target.value)}
+                      placeholder="Ej: Cohort mayo 2026"
+                      className="w-full px-3 py-2.5 rounded-lg text-sm text-white outline-none"
+                      style={{ background: '#0A0A0A', border: '1px solid #2A2A2A' }}
+                    />
+                  </div>
+                </div>
+
+                {accessMsg && (
+                  <p className={`text-xs px-3 py-2 rounded-lg ${accessMsg.type === 'ok' ? 'text-green-400' : 'text-red-400'}`}
+                    style={{ background: accessMsg.type === 'ok' ? '#4ADE8011' : '#EF444411' }}>
+                    {accessMsg.text}
+                  </p>
+                )}
+
+                <button
+                  onClick={addInvited}
+                  disabled={addingAccess || !newEmail.trim()}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40 transition-all"
+                  style={{ background: GOLD, color: '#0A0A0A' }}
+                >
+                  <UserPlus size={15} />
+                  {addingAccess ? 'Agregando...' : 'Habilitar acceso'}
+                </button>
+              </div>
+            </motion.div>
+
+            {/* Invited list */}
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wider mb-3">{invitedList.length} persona{invitedList.length !== 1 ? 's' : ''} con acceso habilitado</p>
+              {invitedList.length === 0 ? (
+                <div className="text-center py-10">
+                  <ShieldCheck size={36} className="mx-auto mb-3" style={{ color: '#2A2A2A' }} />
+                  <p className="text-gray-500 text-sm">Nadie en la lista todavía.</p>
+                  <p className="text-gray-600 text-xs mt-1">Agrega el email de tus participantes para darles acceso.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {invitedList.map((inv, i) => (
+                    <motion.div
+                      key={inv.id}
+                      initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
+                      className="flex items-center justify-between px-4 py-3 rounded-xl"
+                      style={{ background: SURFACE, border: `1px solid ${BORDER}` }}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                          style={{ background: `${GOLD}22`, color: GOLD }}
+                        >
+                          {(inv.full_name || inv.email)[0].toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-white text-sm font-medium truncate">{inv.full_name || inv.email}</p>
+                          <p className="text-gray-500 text-xs truncate">{inv.full_name ? inv.email : ''}{inv.notes ? ` · ${inv.notes}` : ''}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <span className="text-gray-600 text-xs hidden sm:block">
+                          {new Date(inv.invited_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                        </span>
+                        <button
+                          onClick={() => removeInvited(inv.id, inv.email)}
+                          className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-400/10 transition-all"
+                          title="Quitar acceso"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

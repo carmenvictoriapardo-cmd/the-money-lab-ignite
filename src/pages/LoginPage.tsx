@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { supabase } from '../lib/supabase'
 
 export default function LoginPage() {
   const { signInWithMagicLink } = useAuth()
@@ -12,6 +13,20 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+
+    // Verificar whitelist antes de enviar el magic link
+    const { data: allowed, error: checkErr } = await supabase
+      .rpc('is_email_invited', { check_email: email.toLowerCase().trim() })
+
+    if (checkErr) {
+      // Si falla la verificación, dejar pasar (mejor UX que bloquear)
+      console.warn('Whitelist check failed:', checkErr.message)
+    } else if (!allowed) {
+      setError('Tu acceso no está habilitado. Contacta a Carmen para unirte al programa.')
+      setLoading(false)
+      return
+    }
+
     const { error } = await signInWithMagicLink(email)
     if (error) {
       setError(error.message)
