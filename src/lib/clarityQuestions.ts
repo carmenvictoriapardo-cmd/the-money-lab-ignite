@@ -164,7 +164,7 @@ export const CLARITY_QUESTIONS: ClarityQuestion[] = [
     id: 'men_1',
     section: 'Mentalidad & Compromiso',
     sectionKey: 'mentalidad',
-    text: '¿Qué tan comprometida estás con alcanzar $10K+ mensuales en los próximos 12 meses?',
+    text: '¿Qué tan comprometido(a) estás con hacer lo necesario para alcanzar tu siguiente nivel de ingresos este año?',
     type: 'scale',
     weight: 5,
   },
