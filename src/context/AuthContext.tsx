@@ -25,14 +25,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Timeout de seguridad: si auth tarda más de 6s (iOS PWA con token caducado),
+    // liberamos el loading para que el usuario pueda llegar al login.
+    const safetyTimer = setTimeout(() => {
+      setLoading(false)
+    }, 6000)
+
     // Load initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(safetyTimer)
       setSession(session)
       if (session?.user) {
         fetchProfile(session.user)
       } else {
         setLoading(false)
       }
+    }).catch(() => {
+      clearTimeout(safetyTimer)
+      setLoading(false)
     })
 
     // Listen for auth changes
@@ -46,17 +56,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(safetyTimer)
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function fetchProfile(user: User) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-    setProfile(data ?? null)
-    setLoading(false)
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+      setProfile(data ?? null)
+    } catch (err) {
+      console.error('fetchProfile error:', err)
+      setProfile(null)
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function refreshProfile() {

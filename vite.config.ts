@@ -9,6 +9,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      devOptions: { enabled: false },
       includeAssets: ['favicon.svg', 'pwa-192.svg'],
       manifest: {
         name: 'THE MONEY LAB™ IGNITE',
