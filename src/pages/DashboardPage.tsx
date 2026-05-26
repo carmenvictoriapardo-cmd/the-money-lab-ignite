@@ -39,6 +39,8 @@ export default function DashboardPage() {
   const [dataLoading, setDataLoading] = useState(false)
   const [insight, setInsight] = useState<WeeklyInsight | null>(null)
   const [generatingInsight, setGeneratingInsight] = useState(false)
+  const [dailyStreak, setDailyStreak] = useState(0)
+  const [todayDone, setTodayDone] = useState(false)
 
   const day = getCurrentDay()
   const week = getCurrentWeek()
@@ -55,13 +57,15 @@ export default function DashboardPage() {
     if (!profile?.id) return
     const uid = profile.id
 
-    const [crearRes, standupRes, revenueRes, blockerRes, identityRes, insightRes] = await Promise.all([
+    const today = new Date().toISOString().split('T')[0]
+    const [crearRes, standupRes, revenueRes, blockerRes, identityRes, insightRes, dailyRes] = await Promise.all([
       supabase.from('weekly_scores').select('*').eq('user_id', uid).order('week_number', { ascending: false }).limit(1),
       supabase.from('weekly_standups').select('*').eq('user_id', uid).order('week_number', { ascending: false }).limit(1),
       supabase.from('revenue_events').select('amount').eq('user_id', uid),
       supabase.from('blocker_logs').select('id').eq('user_id', uid).eq('resolved', false),
       supabase.from('identity_tracker').select('confidence_level, created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
       supabase.from('weekly_insights').select('*').eq('user_id', uid).order('week_number', { ascending: false }).limit(1),
+      supabase.from('daily_revenue_actions').select('action_date, completed').eq('user_id', uid).order('action_date', { ascending: false }).limit(14),
     ])
 
     const latestCREAR = crearRes.data?.[0] ?? null
@@ -84,6 +88,20 @@ export default function DashboardPage() {
 
     // Load latest insight
     if (insightRes.data?.[0]) setInsight(insightRes.data[0] as WeeklyInsight)
+
+    // Daily action streak
+    const dailyActions = (dailyRes.data ?? []) as { action_date: string; completed: boolean }[]
+    const todayEntry = dailyActions.find(a => a.action_date === today)
+    setTodayDone(todayEntry?.completed ?? false)
+    // Calc streak
+    let streak = 0
+    const msPerDay = 86400000
+    let checkDate = new Date(today)
+    for (const a of dailyActions.filter(x => x.completed).sort((a, b) => b.action_date.localeCompare(a.action_date))) {
+      const diff = Math.round((checkDate.getTime() - new Date(a.action_date + 'T00:00:00').getTime()) / msPerDay)
+      if (diff === 0) { streak++; checkDate = new Date(checkDate.getTime() - msPerDay) } else break
+    }
+    setDailyStreak(streak)
 
     setData({ latestCREAR, latestStandup, revenueTotal, activeBlockers, lastActivityDays, standupPct, latestIdentityConf })
     setDataLoading(false)
@@ -186,12 +204,40 @@ export default function DashboardPage() {
             THE MONEY LAB™ IGNITE
           </p>
           <h1 className="text-2xl font-bold text-white">
-            Bienvenida, {profile.full_name?.split(' ')[0] || 'Igniter'} 👋
+            Hola, {profile.full_name?.split(' ')[0] || 'Igniter'} 👋
           </h1>
           <p className="text-gray-400 text-sm mt-1">
             Día <strong className="text-white">{day}</strong> de 90 · Semana <strong className="text-white">{week}</strong> de 13
           </p>
         </motion.div>
+
+        {/* Daily Action Banner */}
+        <motion.button
+          initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          onClick={() => navigate('/accion')}
+          className="w-full rounded-xl px-4 py-3 mb-6 flex items-center justify-between hover:opacity-90 transition-all"
+          style={{
+            background: todayDone ? '#4ADE8011' : `${GOLD}11`,
+            border: `1px solid ${todayDone ? '#4ADE8044' : GOLD + '44'}`,
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-xl">{todayDone ? '✅' : dailyStreak > 0 ? '🔥' : '⚡'}</span>
+            <div className="text-left">
+              <p className="text-sm font-medium" style={{ color: todayDone ? '#4ADE80' : GOLD }}>
+                {todayDone
+                  ? 'Acción diaria completada'
+                  : 'Comprométete con tu acción de hoy'}
+              </p>
+              {dailyStreak > 0 && (
+                <p className="text-xs text-gray-500">
+                  {dailyStreak} {dailyStreak === 1 ? 'día' : 'días'} de racha{todayDone ? ' 🔥' : ' — no la rompas'}
+                </p>
+              )}
+            </div>
+          </div>
+          <ArrowRight size={16} style={{ color: todayDone ? '#4ADE80' : GOLD }} />
+        </motion.button>
 
         {/* Top row: IGNITE Score + Momentum + Progress */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

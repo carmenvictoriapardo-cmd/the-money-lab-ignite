@@ -12,6 +12,7 @@ const BORDER = '#1E1E1E'
 
 const NAV_ITEMS = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Inicio' },
+  { to: '/accion',    icon: Flame,           label: 'Acción' },
   { to: '/crear',     icon: BarChart3,       label: 'C.R.E.A.R.' },
   { to: '/identidad', icon: Star,            label: 'Identidad' },
   { to: '/standup',   icon: Zap,             label: 'Standup' },
