@@ -8,6 +8,8 @@ interface AuthContextValue {
   profile: Profile | null
   loading: boolean
   signInWithMagicLink: (email: string) => Promise<{ error: Error | null }>
+  signInWithPassword: (email: string, password: string) => Promise<{ error: Error | null }>
+  setPassword: (password: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
   updateProfile: (updates: Partial<Profile>) => Promise<{ data: unknown; error: Error | null }>
   refreshProfile: () => Promise<void>
@@ -117,6 +119,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error }
   }
 
+  async function signInWithPassword(email: string, password: string) {
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    return { error }
+  }
+
+  async function setPassword(password: string) {
+    const { error } = await supabase.auth.updateUser({ password })
+    return { error }
+  }
+
   async function signOut() {
     await supabase.auth.signOut()
   }
@@ -143,6 +155,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       loading,
       signInWithMagicLink,
+      signInWithPassword,
+      setPassword,
       signOut,
       updateProfile,
       refreshProfile,

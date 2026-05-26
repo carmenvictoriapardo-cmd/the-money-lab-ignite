@@ -1,8 +1,9 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import {
   LayoutDashboard, BarChart3, Star, Zap, Shield,
-  Target, DollarSign, Crown, LogOut, Flame, Award, Lightbulb, Users,
+  Target, DollarSign, Crown, LogOut, Flame, Award, Lightbulb, Users, KeyRound, X,
 } from 'lucide-react'
 
 const GOLD = '#C9A84C'
@@ -25,18 +26,92 @@ const NAV_ITEMS = [
 ]
 
 export default function AppLayout() {
-  const { profile, signOut, getCurrentDay } = useAuth()
+  const { profile, signOut, setPassword, getCurrentDay } = useAuth()
   const navigate = useNavigate()
   const day = getCurrentDay()
   const pct = Math.round((day / 90) * 100)
+
+  const [showPwModal, setShowPwModal] = useState(false)
+  const [newPw, setNewPw] = useState('')
+  const [confirmPw, setConfirmPw] = useState('')
+  const [pwLoading, setPwLoading] = useState(false)
+  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   async function handleSignOut() {
     await signOut()
     navigate('/login')
   }
 
+  async function handleSetPassword() {
+    if (newPw.length < 8) { setPwMsg({ ok: false, text: 'Mínimo 8 caracteres.' }); return }
+    if (newPw !== confirmPw) { setPwMsg({ ok: false, text: 'Las contraseñas no coinciden.' }); return }
+    setPwLoading(true)
+    const { error } = await setPassword(newPw)
+    if (error) {
+      setPwMsg({ ok: false, text: error.message })
+    } else {
+      setPwMsg({ ok: true, text: '¡Contraseña guardada! Ya puedes usarla para entrar.' })
+      setNewPw(''); setConfirmPw('')
+      setTimeout(() => { setShowPwModal(false); setPwMsg(null) }, 2500)
+    }
+    setPwLoading(false)
+  }
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: BG }}>
+
+      {/* ─── Set Password Modal ────────────────────────── */}
+      {showPwModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: 'rgba(0,0,0,0.8)' }}
+          onClick={e => { if (e.target === e.currentTarget) setShowPwModal(false) }}
+        >
+          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: '#1A1A1A', border: '1px solid #2A2A2A' }}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <KeyRound size={16} style={{ color: GOLD }} />
+                <h3 className="text-white font-semibold">Definir contraseña</h3>
+              </div>
+              <button onClick={() => setShowPwModal(false)} className="text-gray-500 hover:text-white">
+                <X size={16} />
+              </button>
+            </div>
+            <p className="text-gray-400 text-xs mb-4">
+              Define una contraseña para entrar sin necesitar un enlace de email cada vez.
+            </p>
+            <div className="space-y-3">
+              <input
+                type="password" value={newPw} onChange={e => setNewPw(e.target.value)}
+                placeholder="Nueva contraseña (mín. 8 caracteres)"
+                className="w-full px-3 py-2.5 rounded-lg text-sm text-white outline-none"
+                style={{ background: '#0A0A0A', border: '1px solid #2A2A2A' }}
+              />
+              <input
+                type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)}
+                placeholder="Confirmar contraseña"
+                className="w-full px-3 py-2.5 rounded-lg text-sm text-white outline-none"
+                style={{ background: '#0A0A0A', border: '1px solid #2A2A2A' }}
+                onKeyDown={e => e.key === 'Enter' && handleSetPassword()}
+              />
+              {pwMsg && (
+                <p className={`text-xs px-3 py-2 rounded-lg ${pwMsg.ok ? 'text-green-400' : 'text-red-400'}`}
+                  style={{ background: pwMsg.ok ? '#4ADE8011' : '#EF444411' }}>
+                  {pwMsg.text}
+                </p>
+              )}
+              <button
+                onClick={handleSetPassword}
+                disabled={pwLoading || !newPw || !confirmPw}
+                className="w-full py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40 transition-all"
+                style={{ background: GOLD, color: '#0A0A0A' }}
+              >
+                {pwLoading ? 'Guardando...' : 'Guardar contraseña'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─── Sidebar (desktop) ─────────────────────────── */}
       <aside
@@ -140,13 +215,24 @@ export default function AppLayout() {
               <p className="text-gray-500 text-xs truncate">{profile?.email}</p>
             </div>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors w-full"
-          >
-            <LogOut size={13} />
-            Cerrar sesión
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSignOut}
+              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors"
+            >
+              <LogOut size={13} />
+              Salir
+            </button>
+            <span className="text-gray-700">·</span>
+            <button
+              onClick={() => { setShowPwModal(true); setPwMsg(null) }}
+              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors"
+              title="Definir contraseña de acceso"
+            >
+              <KeyRound size={13} />
+              Contraseña
+            </button>
+          </div>
         </div>
       </aside>
 
