@@ -4,180 +4,215 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import ClarityForm from '../components/clarity/ClarityForm'
-import { ArrowRight, Flame, TrendingUp, DollarSign, Zap, Shield, Star, Target, Sparkles, Loader2, RefreshCw, Lightbulb } from 'lucide-react'
+import {
+  ArrowRight, Flame, TrendingUp, DollarSign, Zap, Shield,
+  Star, Target, Sparkles, Loader2, RefreshCw, BookOpen, ChevronRight,
+} from 'lucide-react'
 import type { WeeklyScore, WeeklyStandup, WeeklyInsight } from '../types'
 
-const GOLD = '#C9A84C'
+const GOLD    = '#C9A84C'
 const SURFACE = '#111111'
-const BORDER = '#1E1E1E'
+const BORDER  = '#1E1E1E'
 
-function getMomentum(lastActivityDays: number): { label: string; icon: string; color: string } {
-  if (lastActivityDays <= 2)  return { label: 'EN FUEGO',  icon: '🔥🔥🔥', color: '#EF4444' }
-  if (lastActivityDays <= 4)  return { label: 'CALIENTE',  icon: '🔥🔥',   color: '#FB923C' }
-  if (lastActivityDays <= 7)  return { label: 'TIBIA',     icon: '🔥',     color: GOLD }
-  return                              { label: 'FRÍA',      icon: '❄️',     color: '#60A5FA' }
+// ─── Phases ────────────────────────────────────────────────────────────────
+const PHASES = [
+  { name: 'Fundación',    weeks: '1–4',  emoji: '🏗️', color: GOLD,      desc: 'Identidad, oferta y marca' },
+  { name: 'Acción',       weeks: '5–9',  emoji: '⚡',  color: '#8B5CF6', desc: 'Hábitos, ventas y ejecución' },
+  { name: 'Revenue',      weeks: '10–13',emoji: '💰',  color: '#10B981', desc: 'Cierra, mide y escala' },
+]
+
+function getPhase(week: number) {
+  if (week <= 4) return 0
+  if (week <= 9) return 1
+  return 2
 }
 
+// ─── Next Step Logic ────────────────────────────────────────────────────────
+interface NextStep {
+  emoji: string
+  label: string
+  sub: string
+  href: string
+  color: string
+  cta: string
+}
+
+function getNextStep(flags: {
+  storyBrandDone: boolean
+  offerDone: boolean
+  identityDone: boolean
+  todayActionDone: boolean
+  standupThisWeek: boolean
+  crearThisWeek: boolean
+}): NextStep {
+  if (!flags.storyBrandDone) return {
+    emoji: '📖', color: GOLD,
+    label: 'Define la historia de tu marca',
+    sub: 'El StoryBrand es el fundamento de toda tu comunicación. Sin él, cada mensaje es un disparo al azar.',
+    href: '/storybrand', cta: 'Ir al StoryBrand Builder',
+  }
+  if (!flags.offerDone) return {
+    emoji: '💡', color: '#8B5CF6',
+    label: 'Construye tu Oferta Irresistible',
+    sub: 'Sin una oferta clara y poderosa, no hay ventas. La IA la construye contigo en 20 minutos.',
+    href: '/oferta', cta: 'Construir mi Oferta',
+  }
+  if (!flags.identityDone) return {
+    emoji: '⭐', color: '#A78BFA',
+    label: 'Registra tu nivel de identidad',
+    sub: 'Tu mentalidad define tu techo de ingresos. 2 minutos que cambian la semana.',
+    href: '/identidad', cta: 'Ir a Identidad',
+  }
+  if (!flags.todayActionDone) return {
+    emoji: '🔥', color: '#EF4444',
+    label: 'Compromete tu acción de hoy',
+    sub: 'El hábito más importante del programa. Un compromiso específico, cada día. 2 minutos.',
+    href: '/accion', cta: 'Registrar mi acción',
+  }
+  if (!flags.standupThisWeek) return {
+    emoji: '⚡', color: GOLD,
+    label: 'Haz tu Standup de esta semana',
+    sub: 'Claridad total en 3 minutos. Carmen lo lee antes de tu próxima sesión.',
+    href: '/standup', cta: 'Ir al Standup',
+  }
+  if (!flags.crearThisWeek) return {
+    emoji: '📊', color: '#60A5FA',
+    label: 'Puntúa tu C.R.E.A.R. de la semana',
+    sub: 'Sabes exactamente dónde estás débil — y eso es lo que cambias primero.',
+    href: '/crear', cta: 'Ir al C.R.E.A.R.',
+  }
+  return {
+    emoji: '🎭', color: '#10B981',
+    label: 'Practica tu pitch de ventas',
+    sub: 'Cada práctica elimina un poco más del miedo a cerrar. La IA es el prospecto más difícil.',
+    href: '/roleplay', cta: 'Abrir Roleplay',
+  }
+}
+
+// ─── Insight helpers ────────────────────────────────────────────────────────
 function calcIgniteScore(crear: number, identity: number, revenueHit: boolean, standupPct: number) {
   return Math.round(crear * 0.4 + identity * 0.2 + (revenueHit ? 100 : 0) * 0.3 + standupPct * 0.1)
 }
 
-interface DashData {
-  latestCREAR: WeeklyScore | null
-  latestStandup: WeeklyStandup | null
-  revenueTotal: number
-  activeBlockers: number
-  lastActivityDays: number
-  standupPct: number
-  latestIdentityConf: number
-}
-
+// ─── Component ──────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { profile, getCurrentDay, getCurrentWeek } = useAuth()
   const navigate = useNavigate()
-  const [data, setData] = useState<DashData | null>(null)
-  const [dataLoading, setDataLoading] = useState(false)
-  const [insight, setInsight] = useState<WeeklyInsight | null>(null)
-  const [generatingInsight, setGeneratingInsight] = useState(false)
-  const [dailyStreak, setDailyStreak] = useState(0)
-  const [todayDone, setTodayDone] = useState(false)
-  const [offerOneLiner, setOfferOneLiner] = useState<string | null>(null)
 
-  const day = getCurrentDay()
+  const [loading, setLoading]               = useState(true)
+  const [revenueTotal, setRevenueTotal]     = useState(0)
+  const [activeBlockers, setActiveBlockers] = useState(0)
+  const [crearTotal, setCrearTotal]         = useState(0)
+  const [latestCREAR, setLatestCREAR]       = useState<WeeklyScore | null>(null)
+  const [identityConf, setIdentityConf]     = useState(0)
+  const [standupPct, setStandupPct]         = useState(0)
+  const [dailyStreak, setDailyStreak]       = useState(0)
+  const [flags, setFlags] = useState({
+    storyBrandDone: false,
+    offerDone: false,
+    identityDone: false,
+    todayActionDone: false,
+    standupThisWeek: false,
+    crearThisWeek: false,
+  })
+  const [insight, setInsight]                 = useState<WeeklyInsight | null>(null)
+  const [generatingInsight, setGeneratingInsight] = useState(false)
+  const [showInsight, setShowInsight]         = useState(false)
+
+  const day  = getCurrentDay()
   const week = getCurrentWeek()
-  const dayPct = Math.round((day / 90) * 100)
+  const dayPct  = Math.round((day / 90) * 100)
+  const phaseIdx = getPhase(week)
 
   useEffect(() => {
-    if (profile?.id && profile?.onboarded) {
-      setDataLoading(true)
-      fetchDashData()
-    }
+    if (profile?.id && profile?.onboarded) fetchAll()
   }, [profile?.id])
 
-  async function fetchDashData() {
+  async function fetchAll() {
     if (!profile?.id) return
-    const uid = profile.id
-
+    const uid  = profile.id
     const today = new Date().toISOString().split('T')[0]
-    const [crearRes, standupRes, revenueRes, blockerRes, identityRes, insightRes, dailyRes, offerRes] = await Promise.all([
+
+    const [
+      crearRes, standupRes, revenueRes, blockerRes,
+      identityRes, insightRes, dailyRes,
+      offerRes, storyRes,
+    ] = await Promise.all([
       supabase.from('weekly_scores').select('*').eq('user_id', uid).order('week_number', { ascending: false }).limit(1),
-      supabase.from('weekly_standups').select('*').eq('user_id', uid).order('week_number', { ascending: false }).limit(1),
+      supabase.from('weekly_standups').select('week_number, created_at').eq('user_id', uid).order('week_number', { ascending: false }).limit(1),
       supabase.from('revenue_events').select('amount').eq('user_id', uid),
       supabase.from('blocker_logs').select('id').eq('user_id', uid).eq('resolved', false),
-      supabase.from('identity_tracker').select('confidence_level, created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
+      supabase.from('identity_tracker').select('confidence_level').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
       supabase.from('weekly_insights').select('*').eq('user_id', uid).order('week_number', { ascending: false }).limit(1),
       supabase.from('daily_revenue_actions').select('action_date, completed').eq('user_id', uid).order('action_date', { ascending: false }).limit(14),
       supabase.from('offer_builder').select('one_liner').eq('user_id', uid).maybeSingle(),
+      supabase.from('storybrand_scripts').select('ai_output').eq('user_id', uid).maybeSingle(),
     ])
 
-    const latestCREAR = crearRes.data?.[0] ?? null
-    const latestStandup = standupRes.data?.[0] ?? null
-    const revenueTotal = (revenueRes.data ?? []).reduce((s: number, e: any) => s + Number(e.amount), 0)
-    const activeBlockers = blockerRes.data?.length ?? 0
-    const latestIdentityConf = identityRes.data?.[0]?.confidence_level ?? 0
+    const latestC = crearRes.data?.[0] ?? null
+    const rev     = (revenueRes.data ?? []).reduce((s: number, e: any) => s + Number(e.amount), 0)
+    const blockers = blockerRes.data?.length ?? 0
+    const conf     = identityRes.data?.[0]?.confidence_level ?? 0
+    const latestSup = standupRes.data?.[0] ?? null
 
-    // Days since last activity
-    const dates: Date[] = []
-    if (latestCREAR) dates.push(new Date(latestCREAR.created_at))
-    if (latestStandup) dates.push(new Date(latestStandup.created_at))
-    if (identityRes.data?.[0]) dates.push(new Date(identityRes.data[0].created_at))
-    const lastDate = dates.length ? new Date(Math.max(...dates.map(d => d.getTime()))) : null
-    const lastActivityDays = lastDate
-      ? Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24))
-      : 999
+    setLatestCREAR(latestC)
+    setCrearTotal(latestC?.total_score ?? 0)
+    setRevenueTotal(rev)
+    setActiveBlockers(blockers)
+    setIdentityConf(conf)
 
-    const standupPct = week > 0 ? Math.min(100, Math.round(((latestStandup ? 1 : 0) / week) * 100)) : 0
+    const supPct = week > 0 ? Math.min(100, Math.round(((latestSup ? 1 : 0) / week) * 100)) : 0
+    setStandupPct(supPct)
 
-    // Load latest insight
-    if (insightRes.data?.[0]) setInsight(insightRes.data[0] as WeeklyInsight)
+    if (insightRes.data?.[0]) { setInsight(insightRes.data[0] as WeeklyInsight) }
 
-    // Daily action streak
-    const dailyActions = (dailyRes.data ?? []) as { action_date: string; completed: boolean }[]
-    const todayEntry = dailyActions.find(a => a.action_date === today)
-    setTodayDone(todayEntry?.completed ?? false)
-    // Calc streak
+    // Streak
+    const daily = (dailyRes.data ?? []) as { action_date: string; completed: boolean }[]
+    const todayEntry = daily.find(a => a.action_date === today)
     let streak = 0
-    const msPerDay = 86400000
     let checkDate = new Date(today)
-    for (const a of dailyActions.filter(x => x.completed).sort((a, b) => b.action_date.localeCompare(a.action_date))) {
-      const diff = Math.round((checkDate.getTime() - new Date(a.action_date + 'T00:00:00').getTime()) / msPerDay)
-      if (diff === 0) { streak++; checkDate = new Date(checkDate.getTime() - msPerDay) } else break
+    for (const a of daily.filter(x => x.completed).sort((a, b) => b.action_date.localeCompare(a.action_date))) {
+      const diff = Math.round((checkDate.getTime() - new Date(a.action_date + 'T00:00:00').getTime()) / 86400000)
+      if (diff === 0) { streak++; checkDate = new Date(checkDate.getTime() - 86400000) } else break
     }
     setDailyStreak(streak)
 
-    // Offer one-liner
-    setOfferOneLiner((offerRes.data as any)?.one_liner ?? null)
+    setFlags({
+      storyBrandDone: !!(storyRes.data as any)?.ai_output,
+      offerDone:      !!(offerRes.data as any)?.one_liner,
+      identityDone:   conf > 0,
+      todayActionDone: !!(todayEntry?.completed),
+      standupThisWeek: latestSup?.week_number === week,
+      crearThisWeek:   latestC?.week_number === week,
+    })
 
-    setData({ latestCREAR, latestStandup, revenueTotal, activeBlockers, lastActivityDays, standupPct, latestIdentityConf })
-    setDataLoading(false)
+    setLoading(false)
   }
 
   async function generateInsight() {
-    if (!profile?.id || !data) return
+    if (!profile?.id) return
     setGeneratingInsight(true)
-
-    // Gather full week data for the AI
     const uid = profile.id
-    const [prevCREAR, activeBlockersFull, weekRevenue] = await Promise.all([
-      supabase.from('weekly_scores').select('crear_scores, total_score').eq('user_id', uid)
-        .order('week_number', { ascending: false }).limit(2),
-      supabase.from('blocker_logs').select('blocker_type, description').eq('user_id', uid).eq('resolved', false),
-      supabase.from('revenue_events').select('amount').eq('user_id', uid)
-        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
-    ])
-
-    const weekRevenueTotal = (weekRevenue.data ?? []).reduce((s, e) => s + Number(e.amount), 0)
-    const crearHistory = prevCREAR.data ?? []
-
     const payload = {
-      week_number: week,
-      day_of_program: day,
+      week_number: week, day_of_program: day,
       participant_name: profile.full_name || 'Participante',
-      standup: data.latestStandup ? {
-        win: data.latestStandup.win,
-        revenue_action: data.latestStandup.revenue_action,
-        needs_from_mentor: data.latestStandup.needs_from_carmen,
-      } : undefined,
-      crear_current: crearHistory[0]?.crear_scores ? {
-        ...crearHistory[0].crear_scores,
-        total: crearHistory[0].total_score,
-      } : undefined,
-      crear_previous: crearHistory[1]?.crear_scores ? {
-        ...crearHistory[1].crear_scores,
-        total: crearHistory[1].total_score,
-      } : undefined,
-      revenue_this_week: weekRevenueTotal,
-      revenue_total: data.revenueTotal,
-      active_blockers: (activeBlockersFull.data ?? []).map(b => ({
-        type: b.blocker_type,
-        description: b.description,
-      })),
-      resolved_blockers_this_week: 0,
-      identity_confidence: data.latestIdentityConf || undefined,
+      crear_current: latestCREAR ? { ...latestCREAR.crear_scores, total: latestCREAR.total_score } : undefined,
+      revenue_total: revenueTotal,
+      identity_confidence: identityConf || undefined,
     }
-
-    const { data: fnData, error: fnError } = await supabase.functions.invoke(
-      'generate-weekly-insight', { body: payload }
-    )
-
+    const { data: fnData, error: fnError } = await supabase.functions.invoke('generate-weekly-insight', { body: payload })
     if (!fnError && fnData?.insight) {
-      // Save to DB (upsert by week)
-      const { data: saved } = await supabase
-        .from('weekly_insights')
-        .upsert({ user_id: uid, week_number: week, insight: fnData.insight },
-          { onConflict: 'user_id,week_number' })
-        .select()
-        .single()
+      const { data: saved } = await supabase.from('weekly_insights')
+        .upsert({ user_id: uid, week_number: week, insight: fnData.insight }, { onConflict: 'user_id,week_number' })
+        .select().single()
       if (saved) setInsight(saved as WeeklyInsight)
     }
     setGeneratingInsight(false)
+    setShowInsight(true)
   }
 
-  // ── Not onboarded → show clarity form ──────────────────
   if (!profile?.onboarded) return <ClarityForm />
-
-  // ── Loading data ────────────────────────────────────────
-  if (dataLoading || !data) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#0A0A0A' }}>
         <div className="w-6 h-6 rounded-full animate-spin" style={{ border: `2px solid ${GOLD}`, borderTopColor: 'transparent' }} />
@@ -185,322 +220,206 @@ export default function DashboardPage() {
     )
   }
 
-  const { latestCREAR, revenueTotal, activeBlockers, lastActivityDays, standupPct, latestIdentityConf } = data
-  const crearTotal = latestCREAR?.total_score ?? 0
-  const igniteScore = calcIgniteScore(crearTotal, latestIdentityConf * 10, revenueTotal > 0, standupPct)
-  const momentum = getMomentum(lastActivityDays)
+  const igniteScore = calcIgniteScore(crearTotal, identityConf * 10, revenueTotal > 0, standupPct)
+  const nextStep    = getNextStep(flags)
+  const phase       = PHASES[phaseIdx]
 
-  const quickActions = [
-    { label: 'Standup semanal',    icon: Zap,        to: '/standup',  color: GOLD,      urgent: lastActivityDays > 5 },
-    { label: 'C.R.E.A.R.',        icon: TrendingUp, to: '/crear',    color: '#60A5FA', urgent: crearTotal === 0 },
-    { label: 'Identidad',         icon: Star,       to: '/identidad', color: '#A78BFA', urgent: latestIdentityConf === 0 },
-    { label: 'Reportar bloqueo',  icon: Shield,     to: '/bloqueos', color: '#F87171', urgent: activeBlockers > 0 },
-    { label: 'Strategic Review',  icon: Target,     to: '/reviews',  color: '#34D399', urgent: false },
-    { label: 'Registrar revenue', icon: DollarSign, to: '/revenue',  color: '#FBBF24', urgent: revenueTotal === 0 },
+  // Count completed foundation items for checklist
+  const checklist = [
+    { done: flags.storyBrandDone, label: 'StoryBrand definido',          href: '/storybrand' },
+    { done: flags.offerDone,       label: 'Oferta Irresistible construida', href: '/oferta' },
+    { done: flags.identityDone,    label: 'Identidad registrada',          href: '/identidad' },
+    { done: flags.todayActionDone, label: 'Acción de hoy comprometida',    href: '/accion' },
+    { done: flags.standupThisWeek, label: 'Standup de esta semana',        href: '/standup' },
+    { done: flags.crearThisWeek,   label: 'C.R.E.A.R. de esta semana',    href: '/crear' },
   ]
+  const checklistDone = checklist.filter(c => c.done).length
 
   return (
     <div className="min-h-screen p-4 md:p-8" style={{ background: '#0A0A0A' }}>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-3xl mx-auto space-y-5">
 
-        {/* Welcome */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <p className="text-xs tracking-[0.2em] uppercase mb-1" style={{ color: GOLD }}>
-            THE MONEY LAB™ IGNITE
-          </p>
-          <h1 className="text-2xl font-bold text-white">
-            Hola, {profile.full_name?.split(' ')[0] || 'Igniter'} 👋
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Día <strong className="text-white">{day}</strong> de 90 · Semana <strong className="text-white">{week}</strong> de 13
-          </p>
+        {/* ── HEADER ─────────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+          <p className="text-xs tracking-[0.2em] uppercase mb-1" style={{ color: GOLD }}>THE MONEY LAB™ IGNITE</p>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-white">
+              {profile.full_name?.split(' ')[0] || 'Igniter'} 👋
+            </h1>
+            <span className="text-xs px-3 py-1 rounded-full font-medium"
+              style={{ background: `${phase.color}22`, color: phase.color, border: `1px solid ${phase.color}44` }}>
+              {phase.emoji} Fase {phaseIdx + 1}: {phase.name}
+            </span>
+          </div>
+          <p className="text-gray-500 text-sm mt-0.5">Día <strong className="text-gray-300">{day}</strong> de 90 · Semana <strong className="text-gray-300">{week}</strong> · {90 - day} días restantes</p>
         </motion.div>
 
-        {/* Daily Action Banner */}
-        <motion.button
-          initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          onClick={() => navigate('/accion')}
-          className="w-full rounded-xl px-4 py-3 mb-6 flex items-center justify-between hover:opacity-90 transition-all"
-          style={{
-            background: todayDone ? '#4ADE8011' : `${GOLD}11`,
-            border: `1px solid ${todayDone ? '#4ADE8044' : GOLD + '44'}`,
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-xl">{todayDone ? '✅' : dailyStreak > 0 ? '🔥' : '⚡'}</span>
-            <div className="text-left">
-              <p className="text-sm font-medium" style={{ color: todayDone ? '#4ADE80' : GOLD }}>
-                {todayDone
-                  ? 'Acción diaria completada'
-                  : 'Comprométete con tu acción de hoy'}
-              </p>
-              {dailyStreak > 0 && (
-                <p className="text-xs text-gray-500">
-                  {dailyStreak} {dailyStreak === 1 ? 'día' : 'días'} de racha{todayDone ? ' 🔥' : ' — no la rompas'}
-                </p>
+        {/* ── FASE TRACKER ───────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05 }}
+          className="rounded-xl p-4 flex items-center gap-2"
+          style={{ background: SURFACE, border: `1px solid ${BORDER}` }}>
+          {PHASES.map((p, i) => (
+            <div key={i} className="flex items-center flex-1">
+              <div className={`flex-1 flex flex-col items-center gap-1 py-1 px-2 rounded-lg transition-all ${i === phaseIdx ? 'ring-1' : ''}`}
+                style={{ background: i === phaseIdx ? `${p.color}18` : 'transparent', ringColor: p.color }}>
+                <span className="text-lg">{p.emoji}</span>
+                <span className="text-xs font-semibold" style={{ color: i === phaseIdx ? p.color : i < phaseIdx ? '#4ADE80' : '#4B5563' }}>
+                  {i < phaseIdx ? '✓ ' : ''}{p.name}
+                </span>
+                <span className="text-xs" style={{ color: i === phaseIdx ? p.color : '#4B5563' }}>Sem {p.weeks}</span>
+              </div>
+              {i < PHASES.length - 1 && (
+                <ChevronRight size={14} className="flex-shrink-0 mx-1" style={{ color: i < phaseIdx ? '#4ADE80' : '#2A2A2A' }} />
               )}
             </div>
-          </div>
-          <ArrowRight size={16} style={{ color: todayDone ? '#4ADE80' : GOLD }} />
-        </motion.button>
-
-        {/* Offer Banner */}
-        <motion.button
-          initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
-          onClick={() => navigate('/oferta')}
-          className="w-full rounded-xl px-4 py-3 mb-4 flex items-center justify-between hover:opacity-90 transition-all"
-          style={{ background: '#7C3AED0A', border: '1px solid #7C3AED33' }}
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <Lightbulb size={16} style={{ color: '#A78BFA' }} className="flex-shrink-0" />
-            <div className="text-left min-w-0">
-              <p className="text-sm font-medium truncate" style={{ color: '#A78BFA' }}>
-                {offerOneLiner ? offerOneLiner : 'Define tu oferta irresistible →'}
-              </p>
-              {!offerOneLiner && (
-                <p className="text-xs text-gray-600">5 preguntas · la IA construye el resto</p>
-              )}
-            </div>
-          </div>
-          <ArrowRight size={14} style={{ color: '#7C3AED' }} className="flex-shrink-0 ml-2" />
-        </motion.button>
-
-        {/* Top row: IGNITE Score + Momentum + Progress */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-
-          {/* IGNITE Score */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 }}
-            className="rounded-2xl p-6 flex flex-col items-center justify-center text-center"
-            style={{ background: SURFACE, border: `1px solid ${GOLD}44` }}
-          >
-            <p className="text-xs tracking-wider uppercase text-gray-400 mb-2">IGNITE Score</p>
-            <motion.p
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-              className="text-5xl font-bold mb-1"
-              style={{ color: igniteScore >= 70 ? '#4ADE80' : igniteScore >= 40 ? GOLD : '#FB923C' }}
-            >
-              {igniteScore}
-            </motion.p>
-            <p className="text-gray-500 text-xs">/ 100</p>
-          </motion.div>
-
-          {/* Momentum */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
-            className="rounded-2xl p-6 flex flex-col items-center justify-center text-center"
-            style={{ background: SURFACE, border: `1px solid ${BORDER}` }}
-          >
-            <p className="text-xs tracking-wider uppercase text-gray-400 mb-2">Momentum</p>
-            <p className="text-4xl mb-1">{momentum.icon}</p>
-            <p className="font-bold text-sm" style={{ color: momentum.color }}>{momentum.label}</p>
-            <p className="text-gray-500 text-xs mt-1">
-              {lastActivityDays <= 0 ? 'Activa hoy' : `Último registro: hace ${lastActivityDays}d`}
-            </p>
-          </motion.div>
-
-          {/* Días del programa */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }}
-            className="rounded-2xl p-6"
-            style={{ background: SURFACE, border: `1px solid ${BORDER}` }}
-          >
-            <p className="text-xs tracking-wider uppercase text-gray-400 mb-3">Progreso del programa</p>
-            <div className="flex items-end gap-2 mb-3">
-              <p className="text-3xl font-bold text-white">{dayPct}%</p>
-              <p className="text-gray-500 text-sm mb-1">completado</p>
-            </div>
-            <div className="h-2 rounded-full mb-2" style={{ background: '#2A2A2A' }}>
-              <motion.div
-                initial={{ width: 0 }} animate={{ width: `${dayPct}%` }} transition={{ delay: 0.4, duration: 1 }}
-                className="h-2 rounded-full" style={{ background: GOLD }}
-              />
-            </div>
-            <p className="text-gray-500 text-xs">Día {day} · {90 - day} días restantes</p>
-          </motion.div>
-        </div>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          {[
-            { label: 'C.R.E.A.R.', value: crearTotal > 0 ? `${crearTotal}%` : '—', icon: TrendingUp, color: '#60A5FA', to: '/crear' },
-            { label: 'Revenue total', value: revenueTotal > 0 ? `$${revenueTotal.toLocaleString()}` : '$0', icon: DollarSign, color: '#FBBF24', to: '/revenue' },
-            { label: 'Bloqueos activos', value: String(activeBlockers), icon: Shield, color: activeBlockers > 0 ? '#F87171' : '#4ADE80', to: '/bloqueos' },
-            { label: 'Confianza identidad', value: latestIdentityConf > 0 ? `${latestIdentityConf}/10` : '—', icon: Star, color: '#A78BFA', to: '/identidad' },
-          ].map(({ label, value, icon: Icon, color, to }, i) => (
-            <motion.button
-              key={label}
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.05 }}
-              onClick={() => navigate(to)}
-              className="rounded-xl p-4 text-left hover:scale-105 transition-transform"
-              style={{ background: SURFACE, border: `1px solid ${BORDER}` }}
-            >
-              <Icon size={16} style={{ color }} className="mb-2" />
-              <p className="font-bold text-white text-xl">{value}</p>
-              <p className="text-gray-500 text-xs mt-0.5">{label}</p>
-            </motion.button>
           ))}
-        </div>
+        </motion.div>
 
-        {/* ─── Insight Engine semanal ──────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}
-          className="rounded-2xl mb-6 overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #0d0d1f 0%, #1a1030 100%)', border: '1px solid #7C3AED44' }}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 pt-5 pb-3">
-            <div className="flex items-center gap-2">
-              <Sparkles size={16} style={{ color: '#A78BFA' }} />
-              <p className="text-sm font-semibold" style={{ color: '#A78BFA' }}>
-                Análisis Semanal IA — Semana {week}
-              </p>
+        {/* ── PRÓXIMO PASO (hero card) ────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+          <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">📍 Tu próximo paso</p>
+          <button
+            onClick={() => navigate(nextStep.href)}
+            className="w-full text-left rounded-2xl p-5 transition-all hover:scale-[1.01] group"
+            style={{ background: `${nextStep.color}14`, border: `2px solid ${nextStep.color}55` }}
+          >
+            <div className="flex items-start gap-4">
+              <span className="text-4xl">{nextStep.emoji}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-bold text-lg leading-tight">{nextStep.label}</p>
+                <p className="text-gray-400 text-sm mt-1 leading-relaxed">{nextStep.sub}</p>
+                <div className="flex items-center gap-1.5 mt-3">
+                  <span className="text-sm font-semibold" style={{ color: nextStep.color }}>{nextStep.cta}</span>
+                  <ArrowRight size={14} style={{ color: nextStep.color }} className="group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
             </div>
-            <button
-              onClick={generateInsight}
-              disabled={generatingInsight}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
-              style={{ background: '#7C3AED22', color: '#A78BFA', border: '1px solid #7C3AED44' }}
-            >
-              {generatingInsight
-                ? <><Loader2 size={12} className="animate-spin" /> Analizando...</>
-                : insight
-                  ? <><RefreshCw size={12} /> Regenerar</>
-                  : <><Sparkles size={12} /> Generar análisis</>
-              }
-            </button>
+          </button>
+        </motion.div>
+
+        {/* ── CHECKLIST DE HÁBITOS ───────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+          className="rounded-2xl p-5"
+          style={{ background: SURFACE, border: `1px solid ${BORDER}` }}>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-white font-semibold text-sm">Tu camino esta semana</p>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full"
+              style={{ background: checklistDone === checklist.length ? '#4ADE8022' : `${GOLD}22`, color: checklistDone === checklist.length ? '#4ADE80' : GOLD }}>
+              {checklistDone}/{checklist.length} completados
+            </span>
+          </div>
+          <div className="space-y-2">
+            {checklist.map((item, i) => (
+              <button key={i} onClick={() => !item.done && navigate(item.href)}
+                className="w-full flex items-center gap-3 text-left transition-all rounded-lg px-2 py-2 hover:bg-white/5"
+                style={{ cursor: item.done ? 'default' : 'pointer' }}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold transition-all`}
+                  style={{
+                    background: item.done ? '#4ADE8022' : '#2A2A2A',
+                    border: `1.5px solid ${item.done ? '#4ADE80' : '#3A3A3A'}`,
+                    color: item.done ? '#4ADE80' : '#6B7280',
+                  }}>
+                  {item.done ? '✓' : i + 1}
+                </div>
+                <span className="text-sm flex-1" style={{ color: item.done ? '#6B7280' : '#E5E7EB', textDecoration: item.done ? 'line-through' : 'none' }}>
+                  {item.label}
+                </span>
+                {!item.done && <ChevronRight size={14} className="text-gray-600 flex-shrink-0" />}
+              </button>
+            ))}
           </div>
 
-          <AnimatePresence mode="wait">
-            {generatingInsight ? (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="px-5 pb-5"
+          {/* Daily streak */}
+          {dailyStreak > 0 && (
+            <div className="mt-4 pt-3 flex items-center gap-2" style={{ borderTop: `1px solid ${BORDER}` }}>
+              <span className="text-base">{dailyStreak >= 14 ? '🔥🔥' : dailyStreak >= 7 ? '🔥' : '⚡'}</span>
+              <p className="text-xs text-gray-400">
+                <strong className="text-white">{dailyStreak} días</strong> de racha consecutiva
+                {dailyStreak >= 7 && <span style={{ color: GOLD }}> — ¡Élite!</span>}
+              </p>
+            </div>
+          )}
+        </motion.div>
+
+        {/* ── STATS COMPACTAS ────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: 'IGNITE Score', value: String(igniteScore), sub: '/ 100', color: igniteScore >= 70 ? '#4ADE80' : igniteScore >= 40 ? GOLD : '#FB923C', to: '/crear' },
+            { label: 'Revenue', value: revenueTotal > 0 ? `$${revenueTotal.toLocaleString()}` : '$0', sub: 'total', color: revenueTotal > 0 ? '#4ADE80' : '#6B7280', to: '/revenue' },
+            { label: 'C.R.E.A.R.', value: crearTotal > 0 ? `${crearTotal}%` : '—', sub: 'sem ' + week, color: '#60A5FA', to: '/crear' },
+            { label: 'Bloqueos', value: String(activeBlockers), sub: activeBlockers > 0 ? 'activos' : 'sin bloqueos', color: activeBlockers > 0 ? '#F87171' : '#4ADE80', to: '/bloqueos' },
+          ].map(({ label, value, sub, color, to }, i) => (
+            <button key={label} onClick={() => navigate(to)}
+              className="rounded-xl p-4 text-left hover:scale-105 transition-transform"
+              style={{ background: SURFACE, border: `1px solid ${BORDER}` }}>
+              <p className="text-2xl font-bold" style={{ color }}>{value}</p>
+              <p className="text-gray-500 text-xs">{sub}</p>
+              <p className="text-gray-600 text-xs mt-1">{label}</p>
+            </button>
+          ))}
+        </motion.div>
+
+        {/* ── ANÁLISIS SEMANAL IA ─────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          className="rounded-2xl overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, #0d0d1f 0%, #1a1030 100%)', border: '1px solid #7C3AED44' }}>
+          <button
+            className="w-full flex items-center justify-between px-5 py-4"
+            onClick={() => setShowInsight(s => !s)}
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles size={14} style={{ color: '#A78BFA' }} />
+              <p className="text-sm font-semibold" style={{ color: '#A78BFA' }}>
+                Análisis IA — Semana {week}
+              </p>
+              {insight && <span className="text-xs text-gray-600">· listo</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={e => { e.stopPropagation(); generateInsight() }}
+                disabled={generatingInsight}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
+                style={{ background: '#7C3AED22', color: '#A78BFA', border: '1px solid #7C3AED44' }}
               >
-                <p className="text-gray-400 text-xs mb-3">
-                  Analizando tu standup, C.R.E.A.R., bloqueos y revenue de la semana...
-                </p>
-                <div className="space-y-2">
-                  {[90, 70, 85, 60, 75].map((w, i) => (
-                    <motion.div
-                      key={i}
-                      className="h-2 rounded-full"
-                      style={{ background: '#7C3AED22', width: `${w}%` }}
-                      animate={{ opacity: [0.3, 0.8, 0.3] }}
-                      transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.15 }}
-                    />
-                  ))}
+                {generatingInsight ? <Loader2 size={11} className="animate-spin" /> : insight ? <RefreshCw size={11} /> : <Sparkles size={11} />}
+                {generatingInsight ? 'Analizando...' : insight ? 'Regenerar' : 'Generar'}
+              </button>
+              <ChevronRight size={14} className="text-gray-600 transition-transform" style={{ transform: showInsight ? 'rotate(90deg)' : 'none' }} />
+            </div>
+          </button>
+
+          <AnimatePresence>
+            {showInsight && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="px-5 pb-5">
+                  {generatingInsight ? (
+                    <div className="space-y-2">
+                      {[90, 70, 85, 60].map((w, i) => (
+                        <motion.div key={i} className="h-2 rounded-full"
+                          style={{ background: '#7C3AED22', width: `${w}%` }}
+                          animate={{ opacity: [0.3, 0.8, 0.3] }}
+                          transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.15 }} />
+                      ))}
+                    </div>
+                  ) : insight ? (
+                    <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">{insight.insight}</p>
+                  ) : (
+                    <p className="text-gray-500 text-sm text-center py-4">
+                      Completa tu Standup o C.R.E.A.R. de la semana y luego genera tu análisis.
+                    </p>
+                  )}
                 </div>
-              </motion.div>
-            ) : insight ? (
-              <motion.div
-                key="insight"
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="px-5 pb-5"
-              >
-                <div
-                  className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap"
-                  style={{ fontFamily: 'inherit' }}
-                >
-                  {insight.insight}
-                </div>
-                <p className="text-gray-600 text-xs mt-3">
-                  Generado el {new Date(insight.generated_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
-                </p>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="px-5 pb-5 text-center py-6"
-              >
-                <p className="text-gray-500 text-sm">
-                  Completa al menos tu Standup o C.R.E.A.R. de la semana y genera tu análisis.<br />
-                  La IA conectará todos tus datos y te dará el diagnóstico que necesitas.
-                </p>
               </motion.div>
             )}
           </AnimatePresence>
         </motion.div>
 
-        {/* El Pacto status */}
-        <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-          className="rounded-xl p-4 mb-6 flex items-center gap-3"
-          style={{ background: `${GOLD}11`, border: `1px solid ${GOLD}33` }}
-        >
-          <Flame size={18} style={{ color: GOLD, flexShrink: 0 }} />
-          <div>
-            <p className="text-sm font-semibold" style={{ color: GOLD }}>El Pacto: ACTIVO</p>
-            <p className="text-gray-400 text-xs">Firmado el {profile.el_pacto_signed_at ? new Date(profile.el_pacto_signed_at).toLocaleDateString('es-ES') : '—'} · Mientras ejecutes, Carmen no te suelta.</p>
-          </div>
-        </motion.div>
-
-        {/* C.R.E.A.R. breakdown */}
-        {latestCREAR && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-            className="rounded-2xl p-5 mb-6"
-            style={{ background: SURFACE, border: `1px solid ${BORDER}` }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-white font-semibold">C.R.E.A.R. — Semana {latestCREAR.week_number}</p>
-              <button onClick={() => navigate('/crear')} className="text-xs flex items-center gap-1" style={{ color: GOLD }}>
-                Ver todo <ArrowRight size={12} />
-              </button>
-            </div>
-            <div className="grid grid-cols-5 gap-3">
-              {Object.entries(latestCREAR.crear_scores ?? {}).map(([k, v]) => {
-                const labels: Record<string, string> = {
-                  claridad: 'C', revenue: 'R', ejecucion: 'E', autoridad: 'A', relaciones: 'R2'
-                }
-                const fullLabels: Record<string, string> = {
-                  claridad: 'Claridad', revenue: 'Revenue', ejecucion: 'Ejecución', autoridad: 'Autoridad', relaciones: 'Relaciones'
-                }
-                const score = v as number
-                return (
-                  <div key={k} className="text-center">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold mx-auto mb-1"
-                      style={{
-                        background: score >= 7 ? '#4ADE8022' : score >= 4 ? `${GOLD}22` : '#EF444422',
-                        color: score >= 7 ? '#4ADE80' : score >= 4 ? GOLD : '#EF4444',
-                        border: `2px solid ${score >= 7 ? '#4ADE8066' : score >= 4 ? `${GOLD}66` : '#EF444466'}`,
-                      }}
-                    >
-                      {score}
-                    </div>
-                    <p className="text-gray-500 text-xs">{fullLabels[k] || labels[k]}</p>
-                  </div>
-                )
-              })}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Quick actions */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-3">Acciones rápidas</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {quickActions.map(({ label, icon: Icon, to, color, urgent }) => (
-              <button
-                key={to}
-                onClick={() => navigate(to)}
-                className="rounded-xl p-4 flex items-center gap-3 text-left hover:scale-105 transition-transform"
-                style={{
-                  background: urgent ? `${color}15` : SURFACE,
-                  border: `1px solid ${urgent ? color + '44' : BORDER}`,
-                }}
-              >
-                <Icon size={18} style={{ color, flexShrink: 0 }} />
-                <span className="text-sm font-medium text-white">{label}</span>
-                {urgent && <span className="ml-auto w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />}
-              </button>
-            ))}
-          </div>
-        </motion.div>
-
+        {/* Padding bottom mobile */}
+        <div className="h-4" />
       </div>
     </div>
   )

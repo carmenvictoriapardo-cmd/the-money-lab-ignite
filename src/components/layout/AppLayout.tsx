@@ -12,19 +12,54 @@ const BG = '#0A0A0A'
 const SURFACE = '#111111'
 const BORDER = '#1E1E1E'
 
+// Mobile bottom nav (orden de prioridad)
 const NAV_ITEMS = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Inicio' },
-  { to: '/accion',    icon: Flame,           label: 'Acción' },
-  { to: '/oferta',    icon: Lightbulb,       label: 'Mi Oferta' },
-  { to: '/roleplay',  icon: Users,           label: 'Roleplay' },
-  { to: '/crear',     icon: BarChart3,       label: 'C.R.E.A.R.' },
-  { to: '/identidad', icon: Star,            label: 'Identidad' },
-  { to: '/standup',   icon: Zap,             label: 'Standup' },
-  { to: '/bloqueos',  icon: Shield,          label: 'Bloqueos' },
-  { to: '/reviews',   icon: Target,          label: 'Reviews' },
-  { to: '/revenue',   icon: DollarSign,      label: 'Revenue' },
-  { to: '/evidencia',   icon: Award,      label: 'Evidencias' },
-  { to: '/storybrand',  icon: BookOpen,   label: 'StoryBrand' },
+  { to: '/dashboard',  icon: LayoutDashboard, label: 'Inicio' },
+  { to: '/accion',     icon: Flame,           label: 'Acción' },
+  { to: '/standup',    icon: Zap,             label: 'Standup' },
+  { to: '/crear',      icon: BarChart3,       label: 'C.R.E.A.R.' },
+  { to: '/reviews',    icon: Target,          label: 'Reviews' },
+  { to: '/revenue',    icon: DollarSign,      label: 'Revenue' },
+  { to: '/storybrand', icon: BookOpen,        label: 'Brand' },
+  { to: '/oferta',     icon: Lightbulb,       label: 'Oferta' },
+  { to: '/roleplay',   icon: Users,           label: 'Roleplay' },
+  { to: '/identidad',  icon: Star,            label: 'Identidad' },
+  { to: '/bloqueos',   icon: Shield,          label: 'Bloqueos' },
+  { to: '/evidencia',  icon: Award,           label: 'Evidencias' },
+]
+
+// Sidebar desktop — agrupado por fase
+const NAV_SECTIONS = [
+  {
+    label: null,
+    items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Inicio' }],
+  },
+  {
+    label: 'Fundación',
+    items: [
+      { to: '/storybrand', icon: BookOpen,  label: 'StoryBrand' },
+      { to: '/oferta',     icon: Lightbulb, label: 'Mi Oferta' },
+      { to: '/identidad',  icon: Star,      label: 'Identidad' },
+    ],
+  },
+  {
+    label: 'Acción Diaria',
+    items: [
+      { to: '/accion',   icon: Flame,  label: 'Acción' },
+      { to: '/standup',  icon: Zap,    label: 'Standup' },
+      { to: '/roleplay', icon: Users,  label: 'Roleplay' },
+      { to: '/bloqueos', icon: Shield, label: 'Bloqueos' },
+    ],
+  },
+  {
+    label: 'Resultados',
+    items: [
+      { to: '/crear',     icon: BarChart3,  label: 'C.R.E.A.R.' },
+      { to: '/revenue',   icon: DollarSign, label: 'Revenue' },
+      { to: '/reviews',   icon: Target,     label: 'Reviews' },
+      { to: '/evidencia', icon: Award,      label: 'Evidencias' },
+    ],
+  },
 ]
 
 export default function AppLayout() {
@@ -160,52 +195,69 @@ export default function AppLayout() {
           )}
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                  isActive ? 'font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'
-                }`
-              }
-              style={({ isActive }) => ({
-                color: isActive ? GOLD : undefined,
-                background: isActive ? `${GOLD}15` : undefined,
-              })}
-            >
-              {({ isActive }) => (
-                <>
-                  <Icon size={16} style={{ color: isActive ? GOLD : undefined }} />
-                  {label}
-                </>
+        {/* Nav — agrupado por fase */}
+        <nav className="flex-1 px-3 py-3 overflow-y-auto">
+          {NAV_SECTIONS.map((section, si) => (
+            <div key={si} className={si > 0 ? 'mt-4' : ''}>
+              {section.label && (
+                <p className="text-xs font-semibold uppercase tracking-widest px-3 mb-1"
+                  style={{ color: '#3A3A3A' }}>
+                  {section.label}
+                </p>
               )}
-            </NavLink>
+              <div className="space-y-0.5">
+                {section.items.map(({ to, icon: Icon, label }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                        isActive ? 'font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      }`
+                    }
+                    style={({ isActive }) => ({
+                      color: isActive ? GOLD : undefined,
+                      background: isActive ? `${GOLD}15` : undefined,
+                    })}
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <Icon size={15} style={{ color: isActive ? GOLD : undefined }} />
+                        {label}
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
 
-          {/* Admin link */}
+          {/* Admin */}
           {profile?.role === 'admin' && (
-            <NavLink
-              to="/admin"
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                  isActive ? 'font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'
-                }`
-              }
-              style={({ isActive }) => ({
-                color: isActive ? '#F59E0B' : undefined,
-                background: isActive ? '#F59E0B15' : undefined,
-              })}
-            >
-              {({ isActive }) => (
-                <>
-                  <Crown size={16} style={{ color: isActive ? '#F59E0B' : undefined }} />
-                  Admin
-                </>
-              )}
-            </NavLink>
+            <div className="mt-4">
+              <p className="text-xs font-semibold uppercase tracking-widest px-3 mb-1" style={{ color: '#3A3A3A' }}>
+                Admin
+              </p>
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    isActive ? 'font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`
+                }
+                style={({ isActive }) => ({
+                  color: isActive ? '#F59E0B' : undefined,
+                  background: isActive ? '#F59E0B15' : undefined,
+                })}
+              >
+                {({ isActive }) => (
+                  <>
+                    <Crown size={15} style={{ color: isActive ? '#F59E0B' : undefined }} />
+                    Portal Carmen
+                  </>
+                )}
+              </NavLink>
+            </div>
           )}
         </nav>
 
