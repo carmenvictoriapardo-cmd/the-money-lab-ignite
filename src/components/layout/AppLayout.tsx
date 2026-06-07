@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import {
   LayoutDashboard, BarChart3, Star, Zap, Shield,
-  Target, DollarSign, Crown, LogOut, Flame, Award, Lightbulb, Users, KeyRound, X, Bell, BellOff,
+  Target, DollarSign, Crown, LogOut, Flame, Award, Lightbulb, Users, KeyRound, X, Bell, BellOff, BookOpen,
 } from 'lucide-react'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 
@@ -23,7 +23,8 @@ const NAV_ITEMS = [
   { to: '/bloqueos',  icon: Shield,          label: 'Bloqueos' },
   { to: '/reviews',   icon: Target,          label: 'Reviews' },
   { to: '/revenue',   icon: DollarSign,      label: 'Revenue' },
-  { to: '/evidencia', icon: Award,           label: 'Evidencias' },
+  { to: '/evidencia',   icon: Award,      label: 'Evidencias' },
+  { to: '/storybrand',  icon: BookOpen,   label: 'StoryBrand' },
 ]
 
 export default function AppLayout() {
