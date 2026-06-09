@@ -220,6 +220,110 @@ export default function DashboardPage() {
     )
   }
 
+  // ── PUNTO DE PARTIDA: StoryBrand no completado ───────────────────────────
+  if (!flags.storyBrandDone) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: '#0A0A0A' }}>
+        <div className="max-w-lg w-full">
+
+          {/* Animated icon */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-8"
+          >
+            <div className="text-7xl mb-2">📖</div>
+            <p className="text-xs tracking-[0.25em] uppercase font-medium" style={{ color: GOLD }}>
+              Tu punto de partida
+            </p>
+          </motion.div>
+
+          {/* Main message */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-center mb-8"
+          >
+            <h1 className="text-3xl font-bold text-white mb-4">
+              Antes de cualquier acción,<br />necesitas claridad.
+            </h1>
+            <p className="text-gray-400 leading-relaxed text-base">
+              <strong style={{ color: GOLD }}>StoryBrand</strong> es el mapa de tu negocio.
+              Define quién es tu cliente, qué problema resuelves y por qué
+              tú eres el guía que necesitan.
+            </p>
+            <p className="text-gray-500 text-sm mt-3">
+              Sin esta claridad, cada post, cada email y cada conversación de ventas es un disparo al azar.
+            </p>
+          </motion.div>
+
+          {/* What you'll get */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="rounded-2xl p-5 mb-6"
+            style={{ background: '#111111', border: `1px solid ${GOLD}33` }}
+          >
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: GOLD }}>
+              Al completarlo tendrás listo:
+            </p>
+            <div className="space-y-2">
+              {[
+                '🏷️ 3 taglines para tu marca (elige el mejor)',
+                '💬 Tu one-liner — la presentación perfecta en 1 oración',
+                '🌐 Copy listo para tu web y redes',
+                '📱 Bio de Instagram optimizada',
+                '🎙️ Tu pitch de 30 segundos',
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-xs text-gray-300">{item}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-gray-600 text-xs mt-3">
+              ✨ La IA te ayuda en cada campo si no sabes qué poner
+            </p>
+          </motion.div>
+
+          {/* CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <button
+              onClick={() => navigate('/storybrand')}
+              className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02]"
+              style={{ background: GOLD, color: '#0A0A0A' }}
+            >
+              <BookOpen size={20} />
+              Comenzar mi StoryBrand
+              <ArrowRight size={20} />
+            </button>
+
+            {/* Acción Diaria siempre disponible */}
+            <div className="mt-4 text-center">
+              <p className="text-gray-600 text-sm">
+                La Acción Diaria también empieza desde hoy —
+              </p>
+              <button
+                onClick={() => navigate('/accion')}
+                className="mt-1 text-sm font-medium transition-colors hover:opacity-80"
+                style={{ color: GOLD }}
+              >
+                Registra tu primera acción →
+              </button>
+            </div>
+          </motion.div>
+
+        </div>
+      </div>
+    )
+  }
+
   const igniteScore = calcIgniteScore(crearTotal, identityConf * 10, revenueTotal > 0, standupPct)
   const nextStep    = getNextStep(flags)
   const phase       = PHASES[phaseIdx]

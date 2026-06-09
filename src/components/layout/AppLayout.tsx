@@ -12,47 +12,51 @@ const BG = '#0A0A0A'
 const SURFACE = '#111111'
 const BORDER = '#1E1E1E'
 
-// Mobile bottom nav (orden de prioridad)
+// Mobile bottom nav — prioridad: inicio, acción diaria, storybrand, luego el resto
 const NAV_ITEMS = [
   { to: '/dashboard',  icon: LayoutDashboard, label: 'Inicio' },
   { to: '/accion',     icon: Flame,           label: 'Acción' },
+  { to: '/storybrand', icon: BookOpen,        label: 'Brand' },
   { to: '/standup',    icon: Zap,             label: 'Standup' },
   { to: '/crear',      icon: BarChart3,       label: 'C.R.E.A.R.' },
-  { to: '/reviews',    icon: Target,          label: 'Reviews' },
-  { to: '/revenue',    icon: DollarSign,      label: 'Revenue' },
-  { to: '/storybrand', icon: BookOpen,        label: 'Brand' },
   { to: '/oferta',     icon: Lightbulb,       label: 'Oferta' },
-  { to: '/roleplay',   icon: Users,           label: 'Roleplay' },
   { to: '/identidad',  icon: Star,            label: 'Identidad' },
+  { to: '/roleplay',   icon: Users,           label: 'Roleplay' },
   { to: '/bloqueos',   icon: Shield,          label: 'Bloqueos' },
+  { to: '/revenue',    icon: DollarSign,      label: 'Revenue' },
+  { to: '/reviews',    icon: Target,          label: 'Reviews' },
   { to: '/evidencia',  icon: Award,           label: 'Evidencias' },
 ]
 
-// Sidebar desktop — agrupado por fase
+// Sidebar desktop — StoryBrand primero, Acción Diaria siempre activa
 const NAV_SECTIONS = [
   {
     label: null,
     items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Inicio' }],
   },
   {
-    label: 'Fundación',
+    label: '─── Fundación',
+    labelColor: '#C9A84C',
     items: [
-      { to: '/storybrand', icon: BookOpen,  label: 'StoryBrand' },
+      { to: '/storybrand', icon: BookOpen,  label: 'StoryBrand', badge: 'Primero' },
       { to: '/oferta',     icon: Lightbulb, label: 'Mi Oferta' },
       { to: '/identidad',  icon: Star,      label: 'Identidad' },
     ],
   },
   {
-    label: 'Acción Diaria',
+    label: '─── Acción Diaria',
+    labelColor: '#EF4444',
+    sublabel: 'Semana 1 → 13',
     items: [
-      { to: '/accion',   icon: Flame,  label: 'Acción' },
+      { to: '/accion',   icon: Flame,  label: 'Acción de Hoy' },
       { to: '/standup',  icon: Zap,    label: 'Standup' },
       { to: '/roleplay', icon: Users,  label: 'Roleplay' },
       { to: '/bloqueos', icon: Shield, label: 'Bloqueos' },
     ],
   },
   {
-    label: 'Resultados',
+    label: '─── Resultados',
+    labelColor: '#10B981',
     items: [
       { to: '/crear',     icon: BarChart3,  label: 'C.R.E.A.R.' },
       { to: '/revenue',   icon: DollarSign, label: 'Revenue' },
@@ -198,15 +202,23 @@ export default function AppLayout() {
         {/* Nav — agrupado por fase */}
         <nav className="flex-1 px-3 py-3 overflow-y-auto">
           {NAV_SECTIONS.map((section, si) => (
-            <div key={si} className={si > 0 ? 'mt-4' : ''}>
+            <div key={si} className={si > 0 ? 'mt-5' : ''}>
               {section.label && (
-                <p className="text-xs font-semibold uppercase tracking-widest px-3 mb-1"
-                  style={{ color: '#3A3A3A' }}>
-                  {section.label}
-                </p>
+                <div className="flex items-center gap-1.5 px-1 mb-1.5">
+                  <p className="text-xs font-bold tracking-widest"
+                    style={{ color: (section as any).labelColor || '#3A3A3A' }}>
+                    {section.label}
+                  </p>
+                  {(section as any).sublabel && (
+                    <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                      style={{ background: `${(section as any).labelColor}22`, color: (section as any).labelColor }}>
+                      {(section as any).sublabel}
+                    </span>
+                  )}
+                </div>
               )}
               <div className="space-y-0.5">
-                {section.items.map(({ to, icon: Icon, label }) => (
+                {section.items.map(({ to, icon: Icon, label, ...rest }) => (
                   <NavLink
                     key={to}
                     to={to}
@@ -223,7 +235,13 @@ export default function AppLayout() {
                     {({ isActive }) => (
                       <>
                         <Icon size={15} style={{ color: isActive ? GOLD : undefined }} />
-                        {label}
+                        <span className="flex-1">{label}</span>
+                        {(rest as any).badge && (
+                          <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold"
+                            style={{ background: `${GOLD}33`, color: GOLD }}>
+                            {(rest as any).badge}
+                          </span>
+                        )}
                       </>
                     )}
                   </NavLink>
