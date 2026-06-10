@@ -399,7 +399,7 @@ export default function ClaritySprintPage() {
             style={{ background: '#0F1F0F', border: '1px solid #1A3A1A' }}>
             <p className="text-green-400 text-sm font-semibold mb-1">✅ Perfil enviado a Carmen</p>
             <p className="text-gray-600 text-xs">
-              Carmen revisará tu CLARITY SPRINT™ y agendará tu sesión de Strategic Founder Mapping™ (90 min).
+              Carmen revisará tu CLARITY SPRINT™ y agendará tu sesión de Strategic Founder Mapping™ (60 min).
               Recibirás tu Clarity Score oficial después de esa sesión.
             </p>
           </motion.div>
@@ -444,7 +444,7 @@ export default function ClaritySprintPage() {
             { n: '5', label: 'secciones, 20 preguntas', sub: '~15 minutos de tu tiempo' },
             { n: '🤖', label: 'IA genera tu perfil', sub: 'Strategic Founder Profile™ personalizado' },
             { n: '📊', label: 'Tu Clarity Score', sub: 'De 0–100, con breakdown por área' },
-            { n: '📞', label: 'Sesión 1:1 con Carmen', sub: 'Strategic Founder Mapping™ (90 min)' },
+            { n: '📞', label: 'Sesión 1:1 con Carmen', sub: 'Strategic Founder Mapping™ (60 min)' },
           ].map(({ n, label, sub }) => (
             <div key={label} className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
