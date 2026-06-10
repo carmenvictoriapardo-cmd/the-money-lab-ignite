@@ -399,31 +399,34 @@ export default function AppLayout() {
         <Outlet />
       </main>
 
-      {/* ─── Bottom nav (mobile) ───────────────────────── */}
+      {/* ─── Bottom nav (mobile) — solo 5 items ──────────── */}
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 flex justify-around items-center py-2 px-1"
         style={{ background: SURFACE, borderTop: `1px solid ${BORDER}`, zIndex: 50 }}
       >
-        {[...NAV_ITEMS, ...(profile?.role === 'admin' ? [{ to: '/admin', icon: Crown, label: 'Admin' }] : [])].map(
-          ({ to, icon: Icon, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className="flex flex-col items-center gap-0.5 px-2 py-1"
-              style={({ isActive }) => ({ color: isActive ? GOLD : '#6B7280' })}
-            >
-              {({ isActive }) => (
-                <>
-                  <Icon size={20} style={{ color: isActive ? GOLD : '#6B7280' }} />
-                  <span className="text-xs">{label}</span>
-                  {to === '/standup' && (
-                    <Flame size={8} style={{ color: GOLD, marginTop: -2 }} />
-                  )}
-                </>
-              )}
-            </NavLink>
-          )
-        )}
+        {[
+          { to: '/dashboard',  icon: LayoutDashboard, label: 'Inicio'  },
+          { to: '/semana',     icon: CalendarDays,    label: 'Semana'  },
+          { to: '/accion',     icon: Flame,           label: 'Acción'  },
+          { to: '/scoreboard', icon: Trophy,          label: 'Score'   },
+          ...(profile?.role === 'admin'
+            ? [{ to: '/admin', icon: Crown, label: 'Admin' }]
+            : [{ to: '/storybrand', icon: BookOpen, label: 'Brand' }]),
+        ].map(({ to, icon: Icon, label }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className="flex flex-col items-center gap-0.5 px-3 py-1"
+            style={({ isActive }) => ({ color: isActive ? GOLD : '#6B7280' })}
+          >
+            {({ isActive }) => (
+              <>
+                <Icon size={21} style={{ color: isActive ? GOLD : '#6B7280' }} />
+                <span className="text-xs">{label}</span>
+              </>
+            )}
+          </NavLink>
+        ))}
       </nav>
     </div>
   )

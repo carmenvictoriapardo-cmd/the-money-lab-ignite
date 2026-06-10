@@ -6,8 +6,9 @@ import { useAuth } from '../hooks/useAuth'
 import ClarityForm from '../components/clarity/ClarityForm'
 import {
   ArrowRight, Flame, TrendingUp, DollarSign, Zap, Shield,
-  Star, Target, Sparkles, Loader2, RefreshCw, BookOpen, ChevronRight,
+  Star, Target, Sparkles, Loader2, RefreshCw, BookOpen, ChevronRight, CalendarDays, Trophy,
 } from 'lucide-react'
+import { CREAR_PHASES, getCurriculumWeek } from '../data/curriculum'
 import type { WeeklyScore, WeeklyStandup, WeeklyInsight } from '../types'
 
 const GOLD    = '#C9A84C'
@@ -379,27 +380,52 @@ export default function DashboardPage() {
           ))}
         </motion.div>
 
-        {/* ── PRÓXIMO PASO (hero card) ────────────────────────── */}
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">📍 Tu próximo paso</p>
-          <button
-            onClick={() => navigate(nextStep.href)}
-            className="w-full text-left rounded-2xl p-5 transition-all hover:scale-[1.01] group"
-            style={{ background: `${nextStep.color}14`, border: `2px solid ${nextStep.color}55` }}
-          >
-            <div className="flex items-start gap-4">
-              <span className="text-4xl">{nextStep.emoji}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-bold text-lg leading-tight">{nextStep.label}</p>
-                <p className="text-gray-400 text-sm mt-1 leading-relaxed">{nextStep.sub}</p>
-                <div className="flex items-center gap-1.5 mt-3">
-                  <span className="text-sm font-semibold" style={{ color: nextStep.color }}>{nextStep.cta}</span>
-                  <ArrowRight size={14} style={{ color: nextStep.color }} className="group-hover:translate-x-1 transition-transform" />
+        {/* ── ESTA SEMANA + SCOREBOARD ───────────────────────── */}
+        {(() => {
+          const currW = getCurriculumWeek(week)
+          const currPhase = CREAR_PHASES[currW.phase]
+          return (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Esta Semana */}
+              <button onClick={() => navigate('/semana')}
+                className="text-left rounded-2xl p-5 transition-all hover:scale-[1.01] group"
+                style={{ background: `${currPhase.color}12`, border: `2px solid ${currPhase.color}55` }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <CalendarDays size={14} style={{ color: currPhase.color }} />
+                  <span className="text-xs font-semibold" style={{ color: currPhase.color }}>
+                    {currPhase.letter} — {currPhase.name} · Sem {week}
+                  </span>
                 </div>
-              </div>
-            </div>
-          </button>
-        </motion.div>
+                <p className="text-white font-bold text-base leading-tight mb-1">
+                  {currW.main.emoji} {currW.main.title}
+                </p>
+                <p className="text-gray-500 text-xs leading-relaxed mb-3 line-clamp-2">{currW.main.desc}</p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-semibold" style={{ color: currPhase.color }}>Ver esta semana</span>
+                  <ArrowRight size={12} style={{ color: currPhase.color }} className="group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
+              {/* Scoreboard */}
+              <button onClick={() => navigate('/scoreboard')}
+                className="text-left rounded-2xl p-5 transition-all hover:scale-[1.01] group"
+                style={{ background: '#1a120a', border: `2px solid ${GOLD}44` }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Trophy size={14} style={{ color: GOLD }} />
+                  <span className="text-xs font-semibold" style={{ color: GOLD }}>Scoreboard</span>
+                </div>
+                <p className="text-white font-bold text-base mb-1">🏆 Ranking de cohorte</p>
+                <p className="text-gray-500 text-xs leading-relaxed mb-3">
+                  Presión positiva. Cada punto que ganas es visible para toda la cohorte.
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-semibold" style={{ color: GOLD }}>Ver ranking</span>
+                  <ArrowRight size={12} style={{ color: GOLD }} className="group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
+            </motion.div>
+          )
+        })()}
 
         {/* ── CHECKLIST DE HÁBITOS ───────────────────────────── */}
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}

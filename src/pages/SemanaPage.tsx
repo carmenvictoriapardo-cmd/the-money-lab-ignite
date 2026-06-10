@@ -48,7 +48,7 @@ export default function SemanaPage() {
         .order('created_at', { ascending: false }).limit(1),
       supabase.from('weekly_standups')
         .select('id').eq('user_id', uid).eq('week_number', week).limit(1),
-      supabase.from('reviews')
+      supabase.from('strategic_reviews')
         .select('id').eq('user_id', uid).eq('week_number', week).limit(1),
       supabase.from('blocker_logs')
         .select('id').eq('user_id', uid).eq('resolved', false),
