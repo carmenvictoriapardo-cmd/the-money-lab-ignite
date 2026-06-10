@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { getCurriculumWeek, CREAR_PHASES } from '../data/curriculum'
 import type { WeeklyScore } from '../types'
 import { TrendingUp, ChevronDown, ChevronUp } from 'lucide-react'
 
@@ -9,12 +10,18 @@ const GOLD = '#C9A84C'
 const SURFACE = '#111111'
 const BORDER = '#1E1E1E'
 
+// Categorías del método C.R.E.A.R.™ — una letra por área
 const CREAR_META = [
-  { key: 'claridad',   label: 'Claridad',   emoji: '🎯', desc: '¿Qué tan clara tienes tu oferta e identidad esta semana?' },
-  { key: 'revenue',    label: 'Revenue',    emoji: '💰', desc: '¿Qué tan activa estuviste en acciones de venta y revenue?' },
-  { key: 'ejecucion',  label: 'Ejecución',  emoji: '⚙️', desc: '¿Cuántos entregables y compromisos completaste?' },
-  { key: 'autoridad',  label: 'Autoridad',  emoji: '📣', desc: '¿Qué tanto trabajaste tu visibilidad y posicionamiento?' },
-  { key: 'relaciones', label: 'Relaciones', emoji: '🤝', desc: '¿Qué tan activa fuiste en networking y construcción de relaciones?' },
+  { key: 'claridad',    letter: 'C', label: 'Claridad',    emoji: '🎯', color: '#3B82F6',
+    desc: '¿Qué tan clara tienes tu identidad, oferta y mensaje como fundadora esta semana?' },
+  { key: 'reordena',    letter: 'R', label: 'Reordena',    emoji: '📱', color: '#10B981',
+    desc: '¿Qué tan consistente fuiste en contenido, redes y posicionamiento de marca?' },
+  { key: 'estructura',  letter: 'E', label: 'Estructura',  emoji: '💡', color: '#8B5CF6',
+    desc: '¿Qué tan trabajada está tu oferta, tu pricing y tu proceso de venta?' },
+  { key: 'activa',      letter: 'A', label: 'Activa',      emoji: '⚡', color: '#F59E0B',
+    desc: '¿Qué tan activa estuviste tomando acción: llamadas, propuestas, cierres?' },
+  { key: 'rentabiliza', letter: 'R', label: 'Rentabiliza', emoji: '💰', color: '#EF4444',
+    desc: '¿Qué resultados concretos de ingresos o nuevos clientes lograste esta semana?' },
 ]
 
 function scoreColor(v: number) {
@@ -27,7 +34,9 @@ export default function CREARPage() {
   const { profile, getCurrentWeek } = useAuth()
   const week = getCurrentWeek()
   const [history, setHistory] = useState<WeeklyScore[]>([])
-  const [scores, setScores] = useState<Record<string, number>>({ claridad: 5, revenue: 5, ejecucion: 5, autoridad: 5, relaciones: 5 })
+  const [scores, setScores] = useState<Record<string, number>>({ claridad: 5, reordena: 5, estructura: 5, activa: 5, rentabiliza: 5 })
+  const currWeek  = getCurriculumWeek(week)
+  const currPhase = CREAR_PHASES[currWeek.phase]
   const [wins, setWins] = useState('')
   const [challenges, setChallenges] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -82,6 +91,41 @@ export default function CREARPage() {
           <p className="text-gray-400 text-sm mt-1">Tu evaluación de las 5 áreas clave — Semana {week}</p>
         </motion.div>
 
+        {/* C.R.E.A.R. Journey — fase actual */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.04 }}
+          className="rounded-xl p-3 mb-6 flex items-center gap-1"
+          style={{ background: SURFACE, border: `1px solid ${BORDER}` }}>
+          {(['C','R','E','A','R2'] as const).map((ph, i) => {
+            const p = CREAR_PHASES[ph]
+            const isActive = currWeek.phase === ph
+            const phaseOrder = ['C','R','E','A','R2']
+            const isDone = phaseOrder.indexOf(currWeek.phase) > i
+            return (
+              <div key={ph} className="flex items-center flex-1">
+                <div className="flex-1 flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-lg transition-all"
+                  style={{ background: isActive ? `${p.color}18` : 'transparent',
+                           outline: isActive ? `1px solid ${p.color}55` : 'none' }}>
+                  <span className="text-sm font-black"
+                    style={{ color: isActive ? p.color : isDone ? '#4ADE80' : '#3A3A3A' }}>
+                    {isDone ? '✓' : p.letter}
+                  </span>
+                  <span className="text-xs font-medium hidden sm:block"
+                    style={{ color: isActive ? p.color : isDone ? '#4ADE8066' : '#3A3A3A' }}>
+                    {p.name}
+                  </span>
+                </div>
+                {i < 4 && <div className="w-3 flex-shrink-0 flex items-center justify-center">
+                  <div className="h-px w-full" style={{ background: isDone ? '#4ADE8066' : '#2A2A2A' }} />
+                </div>}
+              </div>
+            )
+          })}
+          <div className="ml-2 flex-shrink-0 text-right">
+            <p className="text-xs font-semibold" style={{ color: currPhase.color }}>Sem {week}</p>
+            <p className="text-xs text-gray-600">{currWeek.main.title.split('—')[0].trim()}</p>
+          </div>
+        </motion.div>
+
         {/* Form this week */}
         {(submitted || alreadyDone) ? (
           <motion.div
@@ -128,14 +172,18 @@ export default function CREARPage() {
               {CREAR_META.map(m => (
                 <div key={m.key}>
                   <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="text-sm font-medium text-white">{m.emoji} {m.label}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-xs font-black px-1.5 py-0.5 rounded font-mono"
+                          style={{ background: `${m.color}22`, color: m.color }}>
+                          {m.letter}
+                        </span>
+                        <p className="text-sm font-semibold text-white">{m.emoji} {m.label}</p>
+                      </div>
                       <p className="text-gray-500 text-xs mt-0.5">{m.desc}</p>
                     </div>
-                    <span
-                      className="text-xl font-bold ml-4 flex-shrink-0"
-                      style={{ color: scoreColor((scores as any)[m.key]) }}
-                    >
+                    <span className="text-xl font-bold ml-4 flex-shrink-0"
+                      style={{ color: m.color }}>
                       {(scores as any)[m.key]}
                     </span>
                   </div>
@@ -143,8 +191,8 @@ export default function CREARPage() {
                     type="range" min={1} max={10} step={1}
                     value={(scores as any)[m.key]}
                     onChange={e => setScores(s => ({ ...s, [m.key]: Number(e.target.value) }))}
-                    className="w-full accent-yellow-400 h-2 rounded-full"
-                    style={{ accentColor: scoreColor((scores as any)[m.key]) }}
+                    className="w-full h-2 rounded-full"
+                    style={{ accentColor: m.color }}
                   />
                   <div className="flex justify-between text-xs text-gray-600 mt-1">
                     <span>1 — Muy bajo</span><span>10 — Excelente</span>

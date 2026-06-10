@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { CURRICULUM, CREAR_PHASES, SESSION_TYPES, getCurriculumWeek } from '../data/curriculum'
-import { ArrowRight, Check, ChevronRight, Trophy } from 'lucide-react'
+import { ArrowRight, Check, ChevronRight, ChevronLeft, Trophy } from 'lucide-react'
 
 const GOLD    = '#C9A84C'
 const BG      = '#0A0A0A'
@@ -17,43 +17,56 @@ interface WeekStatus {
   standupDone:      boolean
   reviewDone:       boolean
   todayActionDone:  boolean
+  evidenceDone:     boolean
 }
 
 export default function SemanaPage() {
   const { profile, getCurrentWeek, getCurrentDay } = useAuth()
   const navigate  = useNavigate()
-  const week      = Math.min(Math.max(getCurrentWeek(), 1), 12)
+  const location  = useLocation()
+  const realWeek  = Math.min(Math.max(getCurrentWeek(), 1), 12)
   const day       = getCurrentDay()
+
+  // viewWeek: the week being displayed — can browse all 12 via prev/next
+  const [viewWeek, setViewWeek] = useState<number>(() => {
+    const sw = (location.state as any)?.week
+    return sw && sw >= 1 && sw <= 12 ? Number(sw) : realWeek
+  })
+  // Keep deprecated `week` alias so existing code doesn't break
+  const week = viewWeek
 
   const [loading, setLoading]   = useState(true)
   const [status, setStatus]     = useState<WeekStatus>({
     identityDone: false, activeBlockers: 0,
-    standupDone: false, reviewDone: false, todayActionDone: false,
+    standupDone: false, reviewDone: false, todayActionDone: false, evidenceDone: false,
   })
 
-  const currWeek    = getCurriculumWeek(week)
+  const currWeek    = getCurriculumWeek(viewWeek)
   const phase       = CREAR_PHASES[currWeek.phase]
   const sessionType = SESSION_TYPES[currWeek.secondary.type]
 
-  useEffect(() => { if (profile?.id) fetchStatus() }, [profile?.id, week])
+  useEffect(() => { if (profile?.id) fetchStatus() }, [profile?.id, viewWeek])
 
   async function fetchStatus() {
     if (!profile?.id) return
     const uid   = profile.id
     const today = new Date().toISOString().split('T')[0]
 
-    const [identityRes, standupRes, reviewRes, blockerRes, dailyRes] = await Promise.all([
+    const [identityRes, standupRes, reviewRes, blockerRes, dailyRes, evidenceRes] = await Promise.all([
       supabase.from('identity_tracker')
         .select('id').eq('user_id', uid)
         .order('created_at', { ascending: false }).limit(1),
       supabase.from('weekly_standups')
-        .select('id').eq('user_id', uid).eq('week_number', week).limit(1),
+        .select('id').eq('user_id', uid).eq('week_number', viewWeek).limit(1),
       supabase.from('strategic_reviews')
-        .select('id').eq('user_id', uid).eq('week_number', week).limit(1),
+        .select('id').eq('user_id', uid).eq('week_number', viewWeek).limit(1),
       supabase.from('blocker_logs')
         .select('id').eq('user_id', uid).eq('resolved', false),
       supabase.from('daily_revenue_actions')
         .select('completed').eq('user_id', uid).eq('action_date', today).limit(1),
+      supabase.from('evidence_items')
+        .select('id').eq('user_id', uid)
+        .gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString()).limit(1),
     ])
 
     // Check identity done this week
@@ -74,6 +87,7 @@ export default function SemanaPage() {
       standupDone:     (standupRes.data?.length ?? 0) > 0,
       reviewDone:      (reviewRes.data?.length ?? 0) > 0,
       todayActionDone: !!(dailyRes.data?.[0]?.completed),
+      evidenceDone:    (evidenceRes.data?.length ?? 0) > 0,
     })
     setLoading(false)
   }
@@ -112,6 +126,12 @@ export default function SemanaPage() {
       done: status.standupDone, href: '/standup', color: GOLD,
     },
     {
+      key: 'evidencia', emoji: '🏆',
+      label: 'Subir Evidencia',
+      sub: `Prueba de trabajo — ${currWeek.deliverable.label}`,
+      done: status.evidenceDone, href: '/evidencia', color: '#F59E0B',
+    },
+    {
       key: 'review', emoji: '🔍',
       label: 'Submit Review',
       sub: 'La IA hace el primer análisis — luego Carmen revisa',
@@ -137,20 +157,57 @@ export default function SemanaPage() {
 
         {/* ── HEADER ────────────────────────────────────────── */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="text-xs font-bold px-2.5 py-1 rounded-full"
-              style={{ background: `${phase.color}22`, color: phase.color, border: `1px solid ${phase.color}44` }}>
-              {phase.letter} — {phase.name}
-            </span>
-            <span className="text-gray-600 text-xs">·</span>
-            <span className="text-gray-500 text-xs">Semana {week} de 12</span>
-            <span className="text-gray-600 text-xs">·</span>
-            <span className="text-gray-500 text-xs">Día {day}</span>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold px-2.5 py-1 rounded-full"
+                style={{ background: `${phase.color}22`, color: phase.color, border: `1px solid ${phase.color}44` }}>
+                {phase.letter} — {phase.name}
+              </span>
+              <span className="text-gray-500 text-xs">Día {day}</span>
+              {viewWeek !== realWeek && (
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                  style={{ background: '#F59E0B22', color: '#F59E0B' }}>
+                  {viewWeek < realWeek ? '← pasada' : 'próxima →'}
+                </span>
+              )}
+            </div>
+            {/* Week navigator */}
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                onClick={() => setViewWeek(v => Math.max(1, v - 1))}
+                disabled={viewWeek === 1}
+                className="w-7 h-7 rounded-lg flex items-center justify-center disabled:opacity-30 transition-all hover:bg-white/10"
+                style={{ color: '#9CA3AF' }}
+              >
+                <ChevronLeft size={15} />
+              </button>
+              <button
+                onClick={() => setViewWeek(realWeek)}
+                className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
+                style={{
+                  background: viewWeek === realWeek ? `${phase.color}22` : '#1E1E1E',
+                  color: viewWeek === realWeek ? phase.color : '#9CA3AF',
+                  border: `1px solid ${viewWeek === realWeek ? phase.color + '44' : '#2A2A2A'}`,
+                }}
+              >
+                Sem {viewWeek}
+              </button>
+              <button
+                onClick={() => setViewWeek(v => Math.min(12, v + 1))}
+                disabled={viewWeek === 12}
+                className="w-7 h-7 rounded-lg flex items-center justify-center disabled:opacity-30 transition-all hover:bg-white/10"
+                style={{ color: '#9CA3AF' }}
+              >
+                <ChevronRight size={15} />
+              </button>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-white">Esta Semana</h1>
-          <p className="text-sm mt-0.5" style={{ color: activitiesDone === 4 ? '#4ADE80' : '#6B7280' }}>
-            {activitiesDone}/5 actividades completadas
-            {activitiesDone === 5 && ' 🎉 ¡Semana completa!'}
+          <h1 className="text-2xl font-bold text-white">
+            {viewWeek === realWeek ? 'Esta Semana' : `Semana ${viewWeek} de 12`}
+          </h1>
+          <p className="text-sm mt-0.5" style={{ color: activitiesDone === 6 ? '#4ADE80' : '#6B7280' }}>
+            {activitiesDone}/6 actividades completadas
+            {activitiesDone === 6 && ' 🎉 ¡Semana completa!'}
           </p>
         </motion.div>
 
@@ -240,10 +297,10 @@ export default function SemanaPage() {
             <h2 className="text-white font-semibold text-sm">Actividades de la semana</h2>
             <span className="text-xs px-2 py-0.5 rounded-full font-medium"
               style={{
-                background: activitiesDone === 5 ? '#4ADE8022' : `${GOLD}22`,
-                color: activitiesDone === 5 ? '#4ADE80' : GOLD,
+                background: activitiesDone === 6 ? '#4ADE8022' : `${GOLD}22`,
+                color: activitiesDone === 6 ? '#4ADE80' : GOLD,
               }}>
-              {activitiesDone}/4
+              {activitiesDone}/6
             </span>
           </div>
 
@@ -303,26 +360,68 @@ export default function SemanaPage() {
           </button>
         </motion.div>
 
-        {/* ── PRÓXIMAS SEMANAS (mini preview) ───────────────── */}
-        {week < 12 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.22 }}>
-            <p className="text-xs text-gray-600 uppercase tracking-wider mb-2">Próximas semanas</p>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {CURRICULUM.filter(c => c.week > week && c.week <= week + 3).map(c => {
-                const p = CREAR_PHASES[c.phase]
-                return (
-                  <div key={c.week} className="flex-shrink-0 rounded-xl px-3 py-2.5 min-w-[140px]"
-                    style={{ background: SURFACE, border: `1px solid ${BORDER}` }}>
-                    <span className="text-xs font-semibold" style={{ color: p.color }}>
-                      Sem {c.week} — {p.letter}
+        {/* ── RECORRIDO 12 SEMANAS ──────────────────────────── */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.22 }}>
+          <p className="text-xs text-gray-600 uppercase tracking-wider mb-2">Recorrido C.R.E.A.R. — 12 Semanas</p>
+          <div className="space-y-2">
+            {(['C','R','E','A','R2'] as const).map(ph => {
+              const phaseInfo = CREAR_PHASES[ph]
+              const phaseWeeks = CURRICULUM.filter(c => c.phase === ph)
+              return (
+                <div key={ph} className="rounded-xl p-3"
+                  style={{ background: SURFACE, border: `1px solid ${BORDER}` }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-black w-5 h-5 rounded flex items-center justify-center"
+                      style={{ background: `${phaseInfo.color}22`, color: phaseInfo.color }}>
+                      {phaseInfo.letter}
                     </span>
-                    <p className="text-gray-400 text-xs mt-1 leading-tight line-clamp-2">{c.main.title}</p>
+                    <span className="text-xs font-semibold" style={{ color: phaseInfo.color }}>
+                      {phaseInfo.name}
+                    </span>
+                    <span className="text-xs text-gray-600">
+                      Sem {phaseWeeks[0].week}–{phaseWeeks[phaseWeeks.length - 1].week}
+                    </span>
                   </div>
-                )
-              })}
-            </div>
-          </motion.div>
-        )}
+                  <div className="flex gap-2 overflow-x-auto pb-0.5">
+                    {phaseWeeks.map(c => {
+                      const isCurrent = c.week === realWeek
+                      const isViewing = c.week === viewWeek
+                      const isPast    = c.week < realWeek
+                      return (
+                        <button
+                          key={c.week}
+                          onClick={() => setViewWeek(c.week)}
+                          className="flex-shrink-0 rounded-lg px-3 py-2 text-left transition-all min-w-[130px]"
+                          style={{
+                            background: isViewing ? `${phaseInfo.color}18` : '#0A0A0A',
+                            border: `1.5px solid ${isViewing ? phaseInfo.color + '66' : isCurrent ? phaseInfo.color + '33' : '#1E1E1E'}`,
+                          }}
+                        >
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="text-xs font-bold"
+                              style={{ color: isPast ? '#4ADE80' : isViewing || isCurrent ? phaseInfo.color : '#4B5563' }}>
+                              {isPast ? '✓' : `S${c.week}`}
+                            </span>
+                            {isCurrent && !isViewing && (
+                              <span className="text-xs px-1 py-0 rounded font-medium"
+                                style={{ background: `${phaseInfo.color}22`, color: phaseInfo.color }}>
+                                hoy
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs leading-tight line-clamp-2"
+                            style={{ color: isPast ? '#6B7280' : isViewing ? '#E5E7EB' : '#6B7280' }}>
+                            {c.main.title.split('—')[0].trim()}
+                          </p>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </motion.div>
 
         <div className="h-4" />
       </div>

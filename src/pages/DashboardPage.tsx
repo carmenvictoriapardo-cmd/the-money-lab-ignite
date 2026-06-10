@@ -7,7 +7,7 @@ import ClarityForm from '../components/clarity/ClarityForm'
 import {
   ArrowRight, Sparkles, Loader2, RefreshCw, BookOpen, ChevronRight, CalendarDays, Trophy,
 } from 'lucide-react'
-import { CREAR_PHASES, getCurriculumWeek } from '../data/curriculum'
+import { CREAR_PHASES, CURRICULUM, getCurriculumWeek } from '../data/curriculum'
 import type { WeeklyScore, WeeklyInsight } from '../types'
 
 const GOLD    = '#C9A84C'
@@ -453,6 +453,69 @@ export default function DashboardPage() {
               <p className="text-gray-600 text-xs mt-1">{label}</p>
             </button>
           ))}
+        </motion.div>
+
+        {/* ── RECORRIDO C.R.E.A.R. — 12 SEMANAS ─────────────── */}
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
+          className="rounded-2xl p-5"
+          style={{ background: SURFACE, border: `1px solid ${BORDER}` }}>
+          <p className="text-white font-semibold text-sm mb-4">Tu Recorrido C.R.E.A.R. — 12 Semanas</p>
+          <div className="space-y-3">
+            {(['C','R','E','A','R2'] as const).map(ph => {
+              const phaseInfo = CREAR_PHASES[ph]
+              const phaseWeeks = CURRICULUM.filter(c => c.phase === ph)
+              return (
+                <div key={ph}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-black w-5 h-5 rounded flex items-center justify-center flex-shrink-0"
+                      style={{ background: `${phaseInfo.color}22`, color: phaseInfo.color }}>
+                      {phaseInfo.letter}
+                    </span>
+                    <span className="text-xs font-semibold" style={{ color: phaseInfo.color }}>
+                      {phaseInfo.name}
+                    </span>
+                    <span className="text-xs text-gray-600">
+                      Sem {phaseWeeks[0].week}–{phaseWeeks[phaseWeeks.length - 1].week}
+                    </span>
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-0.5">
+                    {phaseWeeks.map(c => {
+                      const isCurrent = c.week === week
+                      const isPast    = c.week < week
+                      return (
+                        <button
+                          key={c.week}
+                          onClick={() => navigate('/semana', { state: { week: c.week } })}
+                          className="flex-shrink-0 rounded-xl px-3 py-2.5 text-left transition-all hover:scale-105 min-w-[130px]"
+                          style={{
+                            background: isCurrent ? `${phaseInfo.color}18` : '#0A0A0A',
+                            border: `1.5px solid ${isCurrent ? phaseInfo.color + '66' : '#1E1E1E'}`,
+                          }}
+                        >
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="text-xs font-bold"
+                              style={{ color: isPast ? '#4ADE80' : isCurrent ? phaseInfo.color : '#4B5563' }}>
+                              {isPast ? '✓' : `S${c.week}`}
+                            </span>
+                            {isCurrent && (
+                              <span className="text-xs px-1.5 py-0.5 rounded font-semibold"
+                                style={{ background: `${phaseInfo.color}22`, color: phaseInfo.color }}>
+                                Ahora
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs leading-tight line-clamp-2"
+                            style={{ color: isPast ? '#6B7280' : isCurrent ? '#E5E7EB' : '#6B7280' }}>
+                            {c.main.emoji} {c.main.title.split('—')[0].trim()}
+                          </p>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </motion.div>
 
         {/* ── ANÁLISIS SEMANAL IA ─────────────────────────────── */}
