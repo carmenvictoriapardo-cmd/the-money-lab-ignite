@@ -5,12 +5,10 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import ClarityForm from '../components/clarity/ClarityForm'
 import {
-  ArrowRight, Flame, TrendingUp, DollarSign, Zap, Shield,
-  Star, Target, Sparkles, Loader2, RefreshCw, BookOpen, ChevronRight, CalendarDays, Trophy,
+  ArrowRight, Sparkles, Loader2, RefreshCw, BookOpen, ChevronRight, CalendarDays, Trophy,
 } from 'lucide-react'
-// Note: TrendingUp, Flame, Zap, Shield imported but may be used elsewhere
 import { CREAR_PHASES, getCurriculumWeek } from '../data/curriculum'
-import type { WeeklyScore, WeeklyStandup, WeeklyInsight } from '../types'
+import type { WeeklyScore, WeeklyInsight } from '../types'
 
 const GOLD    = '#C9A84C'
 const SURFACE = '#111111'
@@ -27,68 +25,6 @@ function getPhase(week: number) {
   if (week <= 4) return 0
   if (week <= 9) return 1
   return 2
-}
-
-// ─── Next Step Logic ────────────────────────────────────────────────────────
-interface NextStep {
-  emoji: string
-  label: string
-  sub: string
-  href: string
-  color: string
-  cta: string
-}
-
-function getNextStep(flags: {
-  storyBrandDone: boolean
-  offerDone: boolean
-  identityDone: boolean
-  todayActionDone: boolean
-  standupThisWeek: boolean
-  crearThisWeek: boolean
-}): NextStep {
-  if (!flags.storyBrandDone) return {
-    emoji: '📖', color: GOLD,
-    label: 'Define la historia de tu marca',
-    sub: 'El StoryBrand es el fundamento de toda tu comunicación. Sin él, cada mensaje es un disparo al azar.',
-    href: '/storybrand', cta: 'Ir al StoryBrand Builder',
-  }
-  if (!flags.offerDone) return {
-    emoji: '💡', color: '#8B5CF6',
-    label: 'Construye tu Oferta Irresistible',
-    sub: 'Sin una oferta clara y poderosa, no hay ventas. La IA la construye contigo en 20 minutos.',
-    href: '/oferta', cta: 'Construir mi Oferta',
-  }
-  if (!flags.identityDone) return {
-    emoji: '⭐', color: '#A78BFA',
-    label: 'Registra tu nivel de identidad',
-    sub: 'Tu mentalidad define tu techo de ingresos. 2 minutos que cambian la semana.',
-    href: '/identidad', cta: 'Ir a Identidad',
-  }
-  if (!flags.todayActionDone) return {
-    emoji: '🔥', color: '#EF4444',
-    label: 'Compromete tu acción de hoy',
-    sub: 'El hábito más importante del programa. Un compromiso específico, cada día. 2 minutos.',
-    href: '/accion', cta: 'Registrar mi acción',
-  }
-  if (!flags.standupThisWeek) return {
-    emoji: '⚡', color: GOLD,
-    label: 'Haz tu Standup de esta semana',
-    sub: 'Claridad total en 3 minutos. Carmen lo lee antes de tu próxima sesión.',
-    href: '/standup', cta: 'Ir al Standup',
-  }
-  if (!flags.crearThisWeek) return {
-    emoji: '📊', color: '#60A5FA',
-    label: 'Puntúa tu C.R.E.A.R. de la semana',
-    sub: 'Sabes exactamente dónde estás débil — y eso es lo que cambias primero.',
-    href: '/crear', cta: 'Ir al C.R.E.A.R.',
-  }
-  return {
-    emoji: '🎭', color: '#10B981',
-    label: 'Practica tu pitch de ventas',
-    sub: 'Cada práctica elimina un poco más del miedo a cerrar. La IA es el prospecto más difícil.',
-    href: '/roleplay', cta: 'Abrir Roleplay',
-  }
 }
 
 // ─── Insight helpers ────────────────────────────────────────────────────────
@@ -124,7 +60,6 @@ export default function DashboardPage() {
 
   const day  = getCurrentDay()
   const week = getCurrentWeek()
-  const dayPct  = Math.round((day / 90) * 100)
   const phaseIdx = getPhase(week)
 
   useEffect(() => {
@@ -330,7 +265,6 @@ export default function DashboardPage() {
   }
 
   const igniteScore = calcIgniteScore(crearTotal, identityConf * 10, revenueTotal > 0, standupPct)
-  const nextStep    = getNextStep(flags)
   const phase       = PHASES[phaseIdx]
 
   // Count completed foundation items for checklist
@@ -508,7 +442,7 @@ export default function DashboardPage() {
             { label: 'Revenue', value: revenueTotal > 0 ? `$${revenueTotal.toLocaleString()}` : '$0', sub: 'total', color: revenueTotal > 0 ? '#4ADE80' : '#6B7280', to: '/revenue' },
             { label: 'C.R.E.A.R.', value: crearTotal > 0 ? `${crearTotal}%` : '—', sub: 'sem ' + week, color: '#60A5FA', to: '/crear' },
             { label: 'Bloqueos', value: String(activeBlockers), sub: activeBlockers > 0 ? 'activos' : 'sin bloqueos', color: activeBlockers > 0 ? '#F87171' : '#4ADE80', to: '/bloqueos' },
-          ].map(({ label, value, sub, color, to }, i) => (
+          ].map(({ label, value, sub, color, to }) => (
             <button key={label} onClick={() => navigate(to)}
               className="rounded-xl p-4 text-left hover:scale-105 transition-transform"
               style={{ background: SURFACE, border: `1px solid ${BORDER}` }}>

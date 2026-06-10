@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -10,6 +10,14 @@ const SURFACE = '#111111'
 const BORDER  = '#1E1E1E'
 
 // ── TYPES ───────────────────────────────────────────────────────
+interface SectionField {
+  key: string
+  label: string
+  type: 'text' | 'textarea' | 'select' | 'slider'
+  placeholder?: string
+  options?: string[]
+}
+
 interface Responses {
   // Section 1 — Negocio
   business_name:    string
@@ -66,7 +74,7 @@ const STAGE_COLORS: Record<string, string> = {
   'Escalando':   '#10B981',
 }
 
-const SECTIONS = [
+const SECTIONS: { id: number; key: string; icon: React.ComponentType<{size?: number; style?: React.CSSProperties}>; color: string; title: string; subtitle: string; fields: SectionField[] }[] = [
   {
     id: 1,
     key: 'negocio',
@@ -150,7 +158,6 @@ export default function ClaritySprintPage() {
   const { profile } = useAuth()
   const [step, setStep]               = useState(0)       // 0=intro, 1-5=sections, 6=generating, 7=profile
   const [responses, setResponses]     = useState<Responses>(EMPTY_RESPONSES)
-  const [generating, setGenerating]   = useState(false)
   const [profile_, setProfile_]       = useState<FounderProfile | null>(null)
   const [existingScore, setExistingScore] = useState<number | null>(null)
   const [loadingExisting, setLoadingExisting] = useState(true)
@@ -195,7 +202,6 @@ export default function ClaritySprintPage() {
 
   async function generateProfile() {
     setStep(6)
-    setGenerating(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch(
@@ -222,7 +228,6 @@ export default function ClaritySprintPage() {
     } catch (err) {
       console.error(err)
     }
-    setGenerating(false)
   }
 
   const currentSection = step >= 1 && step <= 5 ? SECTIONS[step - 1] : null

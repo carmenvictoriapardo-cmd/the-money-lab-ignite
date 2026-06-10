@@ -13,24 +13,6 @@ const BG = '#0A0A0A'
 const SURFACE = '#111111'
 const BORDER = '#1E1E1E'
 
-// Mobile bottom nav — prioridad: semana actual, acción, scoreboard, storybrand
-const NAV_ITEMS = [
-  { to: '/dashboard',  icon: LayoutDashboard, label: 'Inicio' },
-  { to: '/semana',     icon: CalendarDays,    label: 'Semana' },
-  { to: '/accion',     icon: Flame,           label: 'Acción' },
-  { to: '/scoreboard', icon: Trophy,          label: 'Score' },
-  { to: '/storybrand', icon: BookOpen,        label: 'Brand' },
-  { to: '/standup',    icon: Zap,             label: 'Standup' },
-  { to: '/crear',      icon: BarChart3,       label: 'C.R.E.A.R.' },
-  { to: '/oferta',     icon: Lightbulb,       label: 'Oferta' },
-  { to: '/identidad',  icon: Star,            label: 'Identidad' },
-  { to: '/roleplay',   icon: Users,           label: 'Roleplay' },
-  { to: '/bloqueos',   icon: Shield,          label: 'Bloqueos' },
-  { to: '/revenue',    icon: DollarSign,      label: 'Revenue' },
-  { to: '/reviews',    icon: Target,          label: 'Reviews' },
-  { to: '/evidencia',  icon: Award,           label: 'Evidencias' },
-]
-
 // Sidebar desktop — Esta Semana primero, Scoreboard visible, StoryBrand fundación
 const NAV_SECTIONS = [
   {
