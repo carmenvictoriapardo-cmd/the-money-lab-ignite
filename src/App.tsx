@@ -15,6 +15,8 @@ import DailyActionPage from './pages/DailyActionPage'
 import OfferBuilderPage from './pages/OfferBuilderPage'
 import SalesRoleplayPage from './pages/SalesRoleplayPage'
 import StoryBrandPage from './pages/StoryBrandPage'
+import SemanaPage from './pages/SemanaPage'
+import ScoreboardPage from './pages/ScoreboardPage'
 import AppLayout from './components/layout/AppLayout'
 
 const GOLD = '#C9A84C'
@@ -72,6 +74,8 @@ function AppRoutes() {
           <Route path="/roleplay" element={<SalesRoleplayPage />} />
           <Route path="/evidencia" element={<EvidencePage />} />
           <Route path="/storybrand" element={<StoryBrandPage />} />
+          <Route path="/semana" element={<SemanaPage />} />
+          <Route path="/scoreboard" element={<ScoreboardPage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Route>
       </Route>

@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth'
 import {
   LayoutDashboard, BarChart3, Star, Zap, Shield,
   Target, DollarSign, Crown, LogOut, Flame, Award, Lightbulb, Users, KeyRound, X, Bell, BellOff, BookOpen,
+  CalendarDays, Trophy,
 } from 'lucide-react'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 
@@ -12,10 +13,12 @@ const BG = '#0A0A0A'
 const SURFACE = '#111111'
 const BORDER = '#1E1E1E'
 
-// Mobile bottom nav — prioridad: inicio, acción diaria, storybrand, luego el resto
+// Mobile bottom nav — prioridad: semana actual, acción, scoreboard, storybrand
 const NAV_ITEMS = [
   { to: '/dashboard',  icon: LayoutDashboard, label: 'Inicio' },
+  { to: '/semana',     icon: CalendarDays,    label: 'Semana' },
   { to: '/accion',     icon: Flame,           label: 'Acción' },
+  { to: '/scoreboard', icon: Trophy,          label: 'Score' },
   { to: '/storybrand', icon: BookOpen,        label: 'Brand' },
   { to: '/standup',    icon: Zap,             label: 'Standup' },
   { to: '/crear',      icon: BarChart3,       label: 'C.R.E.A.R.' },
@@ -28,17 +31,21 @@ const NAV_ITEMS = [
   { to: '/evidencia',  icon: Award,           label: 'Evidencias' },
 ]
 
-// Sidebar desktop — StoryBrand primero, Acción Diaria siempre activa
+// Sidebar desktop — Esta Semana primero, Scoreboard visible, StoryBrand fundación
 const NAV_SECTIONS = [
   {
     label: null,
-    items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Inicio' }],
+    items: [
+      { to: '/dashboard',  icon: LayoutDashboard, label: 'Inicio' },
+      { to: '/semana',     icon: CalendarDays,    label: 'Esta Semana', badge: 'HOY' },
+      { to: '/scoreboard', icon: Trophy,          label: 'Scoreboard 🏆' },
+    ],
   },
   {
     label: '─── Fundación',
     labelColor: '#C9A84C',
     items: [
-      { to: '/storybrand', icon: BookOpen,  label: 'StoryBrand', badge: 'Primero' },
+      { to: '/storybrand', icon: BookOpen,  label: 'StoryBrand', badge: 'Sem 1-2' },
       { to: '/oferta',     icon: Lightbulb, label: 'Mi Oferta' },
       { to: '/identidad',  icon: Star,      label: 'Identidad' },
     ],
@@ -46,7 +53,7 @@ const NAV_SECTIONS = [
   {
     label: '─── Acción Diaria',
     labelColor: '#EF4444',
-    sublabel: 'Semana 1 → 13',
+    sublabel: 'Sem 1→12',
     items: [
       { to: '/accion',   icon: Flame,  label: 'Acción de Hoy' },
       { to: '/standup',  icon: Zap,    label: 'Standup' },
