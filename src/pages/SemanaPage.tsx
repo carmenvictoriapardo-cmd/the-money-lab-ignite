@@ -79,6 +79,17 @@ export default function SemanaPage() {
   }
 
   const activities = [
+    // ── 1. Entregable de la semana — cambia cada semana ──
+    {
+      key: 'deliverable',
+      emoji: currWeek.deliverable.emoji,
+      label: currWeek.deliverable.label,
+      sub: currWeek.deliverable.desc,
+      done: status.reviewDone,
+      href: currWeek.deliverable.href,
+      color: phase.color,
+    },
+    // ── 2-5. Actividades fijas (todas las semanas) ──
     {
       key: 'identity', emoji: '⭐',
       label: 'Identidad de la semana',
@@ -138,8 +149,8 @@ export default function SemanaPage() {
           </div>
           <h1 className="text-2xl font-bold text-white">Esta Semana</h1>
           <p className="text-sm mt-0.5" style={{ color: activitiesDone === 4 ? '#4ADE80' : '#6B7280' }}>
-            {activitiesDone}/4 actividades completadas
-            {activitiesDone === 4 && ' 🎉 ¡Semana completa!'}
+            {activitiesDone}/5 actividades completadas
+            {activitiesDone === 5 && ' 🎉 ¡Semana completa!'}
           </p>
         </motion.div>
 
@@ -229,8 +240,8 @@ export default function SemanaPage() {
             <h2 className="text-white font-semibold text-sm">Actividades de la semana</h2>
             <span className="text-xs px-2 py-0.5 rounded-full font-medium"
               style={{
-                background: activitiesDone === 4 ? '#4ADE8022' : `${GOLD}22`,
-                color: activitiesDone === 4 ? '#4ADE80' : GOLD,
+                background: activitiesDone === 5 ? '#4ADE8022' : `${GOLD}22`,
+                color: activitiesDone === 5 ? '#4ADE80' : GOLD,
               }}>
               {activitiesDone}/4
             </span>

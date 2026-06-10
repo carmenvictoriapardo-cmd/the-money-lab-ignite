@@ -160,103 +160,105 @@ export default function DashboardPage() {
     )
   }
 
-  // ── PUNTO DE PARTIDA: StoryBrand no completado ───────────────────────────
+  // ── RUTA DE INICIO: Clarity Sprint → StoryBrand → Programa ─────────────────
   if (!flags.storyBrandDone) {
+    const steps = [
+      {
+        n: 1, key: 'clarity', done: clarityDone,
+        emoji: '⚡', color: '#8B5CF6',
+        tag: 'PRE-PROGRAMA',
+        title: 'CLARITY SPRINT™',
+        desc: 'Responde 20 preguntas. La IA genera tu Strategic Founder Profile™ y Clarity Score.',
+        cta: clarityDone ? '✓ Completado' : 'Empezar CLARITY SPRINT™',
+        href: '/clarity',
+        active: !clarityDone,
+      },
+      {
+        n: 2, key: 'storybrand', done: false,
+        emoji: '📖', color: GOLD,
+        tag: 'SEMANA 1 — 2 · C (Claridad)',
+        title: 'StoryBrand',
+        desc: 'El mapa de tu negocio. Define quién es tu cliente, qué problema resuelves y por qué tú eres la guía. Sin esto, cada mensaje es un disparo al azar.',
+        cta: 'Comenzar mi StoryBrand',
+        href: '/storybrand',
+        active: clarityDone,
+      },
+    ]
+
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: '#0A0A0A' }}>
-        <div className="max-w-lg w-full">
+      <div className="min-h-screen p-6" style={{ background: '#0A0A0A' }}>
+        <div className="max-w-lg mx-auto pt-8">
 
-          {/* Animated icon */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-8"
-          >
-            <div className="text-7xl mb-2">📖</div>
-            <p className="text-xs tracking-[0.25em] uppercase font-medium" style={{ color: GOLD }}>
-              Tu punto de partida
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
+            <p className="text-xs tracking-[0.25em] uppercase font-medium mb-2" style={{ color: GOLD }}>
+              TU RUTA DE INICIO
             </p>
+            <h1 className="text-2xl font-bold text-white">Primero, claridad total.</h1>
+            <p className="text-gray-500 text-sm mt-1">Dos pasos antes de arrancar las 12 semanas.</p>
           </motion.div>
 
-          {/* Main message */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-center mb-8"
-          >
-            <h1 className="text-3xl font-bold text-white mb-4">
-              Antes de cualquier acción,<br />necesitas claridad.
-            </h1>
-            <p className="text-gray-400 leading-relaxed text-base">
-              <strong style={{ color: GOLD }}>StoryBrand</strong> es el mapa de tu negocio.
-              Define quién es tu cliente, qué problema resuelves y por qué
-              tú eres el guía que necesitan.
-            </p>
-            <p className="text-gray-500 text-sm mt-3">
-              Sin esta claridad, cada post, cada email y cada conversación de ventas es un disparo al azar.
-            </p>
-          </motion.div>
+          {/* Steps */}
+          <div className="space-y-3 mb-6">
+            {steps.map((s, i) => (
+              <motion.div key={s.key}
+                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.12 }}>
+                <div className="rounded-2xl p-5"
+                  style={{
+                    background: s.active ? `${s.color}12` : s.done ? '#0F1F0F' : '#111111',
+                    border: `2px solid ${s.active ? s.color + '55' : s.done ? '#4ADE8044' : '#1E1E1E'}`,
+                  }}>
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                      style={{ background: s.active ? `${s.color}22` : s.done ? '#4ADE8022' : '#1E1E1E' }}>
+                      {s.done ? '✅' : s.emoji}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                          style={{ background: `${s.color}22`, color: s.done ? '#4ADE80' : s.color }}>
+                          {s.done ? '✓ Completado' : `PASO ${s.n}`}
+                        </span>
+                        <span className="text-xs text-gray-600">{s.tag}</span>
+                      </div>
+                      <p className="text-white font-bold mb-1">{s.title}</p>
+                      <p className="text-gray-500 text-xs leading-relaxed">{s.desc}</p>
+                    </div>
+                  </div>
 
-          {/* What you'll get */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
-            className="rounded-2xl p-5 mb-6"
-            style={{ background: '#111111', border: `1px solid ${GOLD}33` }}
-          >
-            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: GOLD }}>
-              Al completarlo tendrás listo:
-            </p>
-            <div className="space-y-2">
-              {[
-                '🏷️ 3 taglines para tu marca (elige el mejor)',
-                '💬 Tu one-liner — la presentación perfecta en 1 oración',
-                '🌐 Copy listo para tu web y redes',
-                '📱 Bio de Instagram optimizada',
-                '🎙️ Tu pitch de 30 segundos',
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="text-xs text-gray-300">{item}</span>
+                  {s.active && (
+                    <button onClick={() => navigate(s.href)}
+                      className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all hover:opacity-90"
+                      style={{ background: s.color, color: '#0A0A0A' }}>
+                      {s.emoji} {s.cta}
+                      <ArrowRight size={14} />
+                    </button>
+                  )}
+
+                  {!s.active && !s.done && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <div className="h-px flex-1" style={{ background: '#2A2A2A' }} />
+                      <span className="text-xs text-gray-600">Disponible después del Paso {s.n - 1}</span>
+                      <div className="h-px flex-1" style={{ background: '#2A2A2A' }} />
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-            <p className="text-gray-600 text-xs mt-3">
-              ✨ La IA te ayuda en cada campo si no sabes qué poner
-            </p>
-          </motion.div>
+              </motion.div>
+            ))}
+          </div>
 
-          {/* CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <button
-              onClick={() => navigate('/storybrand')}
-              className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02]"
-              style={{ background: GOLD, color: '#0A0A0A' }}
-            >
-              <BookOpen size={20} />
-              Comenzar mi StoryBrand
-              <ArrowRight size={20} />
+          {/* Acción Diaria — siempre activa */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
+            <button onClick={() => navigate('/accion')}
+              className="w-full text-left rounded-xl px-4 py-3 flex items-center gap-3 transition-all hover:opacity-80"
+              style={{ background: '#1A0A0A', border: '1px solid #EF444433' }}>
+              <span className="text-xl">🔥</span>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: '#EF4444' }}>Acción Diaria</p>
+                <p className="text-xs text-gray-600">Empieza desde hoy · Semanas 1 → 12</p>
+              </div>
+              <ArrowRight size={14} className="ml-auto" style={{ color: '#EF4444' }} />
             </button>
-
-            {/* Acción Diaria siempre disponible */}
-            <div className="mt-4 text-center">
-              <p className="text-gray-600 text-sm">
-                La Acción Diaria también empieza desde hoy —
-              </p>
-              <button
-                onClick={() => navigate('/accion')}
-                className="mt-1 text-sm font-medium transition-colors hover:opacity-80"
-                style={{ color: GOLD }}
-              >
-                Registra tu primera acción →
-              </button>
-            </div>
           </motion.div>
 
         </div>
