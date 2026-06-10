@@ -10,19 +10,53 @@ const GOLD = '#C9A84C'
 const SURFACE = '#111111'
 const BORDER = '#1E1E1E'
 
-// Categorías del método C.R.E.A.R.™ — una letra por área
+// Categorías del método C.R.E.A.R.™ — estructura base
 const CREAR_META = [
-  { key: 'claridad',    letter: 'C', label: 'Claridad',    emoji: '🎯', color: '#3B82F6',
-    desc: '¿Qué tan clara tienes tu identidad, oferta y mensaje como fundadora esta semana?' },
-  { key: 'reordena',    letter: 'R', label: 'Reordena',    emoji: '📱', color: '#10B981',
-    desc: '¿Qué tan consistente fuiste en contenido, redes y posicionamiento de marca?' },
-  { key: 'estructura',  letter: 'E', label: 'Estructura',  emoji: '💡', color: '#8B5CF6',
-    desc: '¿Qué tan trabajada está tu oferta, tu pricing y tu proceso de venta?' },
-  { key: 'activa',      letter: 'A', label: 'Activa',      emoji: '⚡', color: '#F59E0B',
-    desc: '¿Qué tan activa estuviste tomando acción: llamadas, propuestas, cierres?' },
-  { key: 'rentabiliza', letter: 'R', label: 'Rentabiliza', emoji: '💰', color: '#EF4444',
-    desc: '¿Qué resultados concretos de ingresos o nuevos clientes lograste esta semana?' },
+  { key: 'claridad',    letter: 'C', label: 'Claridad',    emoji: '🎯', color: '#3B82F6' },
+  { key: 'reordena',    letter: 'R', label: 'Reordena',    emoji: '📱', color: '#10B981' },
+  { key: 'estructura',  letter: 'E', label: 'Estructura',  emoji: '💡', color: '#8B5CF6' },
+  { key: 'activa',      letter: 'A', label: 'Activa',      emoji: '⚡', color: '#F59E0B' },
+  { key: 'rentabiliza', letter: 'R', label: 'Rentabiliza', emoji: '💰', color: '#EF4444' },
 ]
+
+// Preguntas adaptadas por fase — cada semana pregunta según lo que se trabaja en ese momento
+const CREAR_QUESTIONS: Record<string, Record<string, string>> = {
+  C: { // Semanas 1-2 · StoryBrand + Identidad
+    claridad:    '¿Qué tan clara está tu identidad de fundadora y tu mensaje de marca esta semana?',
+    reordena:    '¿Publicaste o preparaste contenido alineado con tu BrandScript esta semana?',
+    estructura:  '¿Tienes claridad inicial sobre qué ofreces y a qué precio la venderías?',
+    activa:      '¿Tuviste alguna conversación de negocio o te acercaste a un prospecto?',
+    rentabiliza: '¿Identificaste una oportunidad de ingreso concreta esta semana?',
+  },
+  R: { // Semanas 3-5 · Redes + Contenido + Ads
+    claridad:    '¿Sigue clara tu identidad — tu BrandScript guía todo tu contenido?',
+    reordena:    '¿Qué tan constante fuiste en publicar y conectar con tu audiencia esta semana?',
+    estructura:  '¿Tu oferta está presente y visible en tus redes y contenido de esta semana?',
+    activa:      '¿Tu contenido generó conversaciones de venta o prospectos concretos?',
+    rentabiliza: '¿Tus acciones de contenido/ads generaron leads o interés de compra?',
+  },
+  E: { // Semanas 6-7 · Oferta Irresistible + Pricing
+    claridad:    '¿Tienes total claridad sobre lo que te hace única y diferente en el mercado?',
+    reordena:    '¿Comunicaste tu oferta y su valor en redes, mensajes o conversaciones?',
+    estructura:  '¿Qué tan definida y trabajada está tu Oferta Irresistible y su pricing?',
+    activa:      '¿Presentaste tu oferta a alguien — en persona, DM o llamada esta semana?',
+    rentabiliza: '¿Recibiste interés, cotizaciones o ingresos relacionados con tu oferta?',
+  },
+  A: { // Semanas 8-10 · Ventas + Roleplay + Pipeline
+    claridad:    '¿Tu mensaje de venta es claro y convincente cuando hablas de tu oferta?',
+    reordena:    '¿Tu contenido está apoyando activamente tu proceso de ventas esta semana?',
+    estructura:  '¿Tu proceso de venta y seguimiento están estructurados y funcionan?',
+    activa:      '¿Qué tan activa estuviste haciendo llamadas, propuestas y cierres esta semana?',
+    rentabiliza: '¿Cerraste ventas o generaste ingresos concretos esta semana?',
+  },
+  R2: { // Semanas 11-12 · Demo Day + Plan de escala
+    claridad:    '¿Está clara tu propuesta de valor para los próximos 12 meses de escala?',
+    reordena:    '¿Tienes un sistema de contenido que ya funciona sin que estés encima de todo?',
+    estructura:  '¿Tu oferta, pricing y proceso están documentados y listos para escalar?',
+    activa:      '¿Tienes un pipeline de ventas activo, consistente y predecible?',
+    rentabiliza: '¿Qué resultados concretos de ingresos y clientes lograste esta semana?',
+  },
+}
 
 function scoreColor(v: number) {
   if (v >= 8) return '#4ADE80'
@@ -35,8 +69,10 @@ export default function CREARPage() {
   const week = getCurrentWeek()
   const [history, setHistory] = useState<WeeklyScore[]>([])
   const [scores, setScores] = useState<Record<string, number>>({ claridad: 5, reordena: 5, estructura: 5, activa: 5, rentabiliza: 5 })
-  const currWeek  = getCurriculumWeek(week)
-  const currPhase = CREAR_PHASES[currWeek.phase]
+  const currWeek    = getCurriculumWeek(week)
+  const currPhase   = CREAR_PHASES[currWeek.phase]
+  const phaseKey    = currWeek.phase   // 'C' | 'R' | 'E' | 'A' | 'R2'
+  const questions   = CREAR_QUESTIONS[phaseKey] ?? CREAR_QUESTIONS['C']
   const [wins, setWins] = useState('')
   const [challenges, setChallenges] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -88,7 +124,9 @@ export default function CREARPage() {
             <p className="text-xs tracking-[0.2em] uppercase" style={{ color: GOLD }}>Scorecard semanal</p>
           </div>
           <h1 className="text-2xl font-bold text-white">C.R.E.A.R.</h1>
-          <p className="text-gray-400 text-sm mt-1">Tu evaluación de las 5 áreas clave — Semana {week}</p>
+          <p className="text-gray-400 text-sm mt-1">
+            Semana {week} · Fase <span style={{ color: currPhase.color }}>{currPhase.letter} — {currPhase.name}</span> · Preguntas adaptadas a lo que trabajas ahora
+          </p>
         </motion.div>
 
         {/* C.R.E.A.R. Journey — fase actual */}
@@ -180,7 +218,7 @@ export default function CREARPage() {
                         </span>
                         <p className="text-sm font-semibold text-white">{m.emoji} {m.label}</p>
                       </div>
-                      <p className="text-gray-500 text-xs mt-0.5">{m.desc}</p>
+                      <p className="text-gray-500 text-xs mt-0.5">{questions[m.key]}</p>
                     </div>
                     <span className="text-xl font-bold ml-4 flex-shrink-0"
                       style={{ color: m.color }}>
