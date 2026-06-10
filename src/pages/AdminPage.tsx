@@ -70,7 +70,26 @@ export default function AdminPage() {
   const [respondingTo, setRespondingTo] = useState<string | null>(null)
   const [responseText, setResponseText] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
-  const [tab, setTab] = useState<'cohort' | 'reviews' | 'acceso'>('cohort')
+  const [tab, setTab] = useState<'cohort' | 'reviews' | 'clarity' | 'acceso'>('cohort')
+
+  // Clarity Sprint submissions
+  interface ClaritySubmission {
+    id: string
+    user_id: string
+    clarity_score: number
+    score_breakdown: Record<string, number>
+    strategic_profile: string
+    responses: Record<string, string>
+    status: string
+    submitted_at: string
+    admin_notes: string | null
+    profile_name: string
+    profile_email: string
+  }
+  const [claritySubmissions, setClaritySubmissions] = useState<ClaritySubmission[]>([])
+  const [expandedClarity, setExpandedClarity] = useState<string | null>(null)
+  const [savingNote, setSavingNote] = useState<string | null>(null)
+  const [noteText, setNoteText] = useState<Record<string, string>>({})
 
   // Acceso tab state
   const [invitedList, setInvitedList] = useState<{ id: string; email: string; full_name: string | null; notes: string | null; invited_at: string }[]>([])
@@ -85,7 +104,7 @@ export default function AdminPage() {
   }, [profile?.id])
 
   async function fetchAll() {
-    await Promise.all([fetchParticipants(), fetchPendingReviews(), fetchInvited()])
+    await Promise.all([fetchParticipants(), fetchPendingReviews(), fetchInvited(), fetchClarityProfiles()])
     setLoading(false)
   }
 
@@ -176,6 +195,36 @@ export default function AdminPage() {
         profile_name: r.profiles?.full_name ?? r.profiles?.email ?? 'Participante',
       })))
     }
+  }
+
+  async function fetchClarityProfiles() {
+    const { data } = await supabase
+      .from('clarity_responses')
+      .select('*, profiles(email, full_name)')
+      .eq('status', 'submitted')
+      .order('submitted_at', { ascending: false })
+
+    if (data) {
+      const mapped = data.map((r: any) => ({
+        ...r,
+        profile_name: r.profiles?.full_name ?? r.profiles?.email ?? 'Participante',
+        profile_email: r.profiles?.email ?? '',
+      }))
+      setClaritySubmissions(mapped)
+      // Initialize note text from existing admin_notes
+      const notes: Record<string, string> = {}
+      mapped.forEach((r: ClaritySubmission) => { notes[r.id] = r.admin_notes ?? '' })
+      setNoteText(notes)
+    }
+  }
+
+  async function saveAdminNotes(submissionId: string) {
+    setSavingNote(submissionId)
+    await supabase
+      .from('clarity_responses')
+      .update({ admin_notes: noteText[submissionId] ?? '' })
+      .eq('id', submissionId)
+    setSavingNote(null)
   }
 
   async function submitResponse(reviewId: string) {
@@ -277,6 +326,7 @@ export default function AdminPage() {
           {[
             { key: 'cohort', label: `Cohort (${participants.length})` },
             { key: 'reviews', label: `Reviews (${pendingReviews.length})` },
+            { key: 'clarity', label: `CLARITY SPRINT™ (${claritySubmissions.length})` },
             { key: 'acceso', label: `Acceso (${invitedList.length})` },
           ].map(t => (
             <button
@@ -516,6 +566,200 @@ export default function AdminPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* CLARITY SPRINT™ TAB */}
+        {tab === 'clarity' && (
+          <div>
+            {claritySubmissions.length === 0 ? (
+              <div className="text-center py-16">
+                <Sparkles size={40} className="mx-auto mb-3" style={{ color: '#8B5CF6' }} />
+                <p className="text-white font-medium">Aún sin perfiles enviados</p>
+                <p className="text-gray-500 text-sm mt-1">Cuando una participante complete el CLARITY SPRINT™, su perfil aparecerá aquí.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {claritySubmissions.map((sub, i) => {
+                  const profile = (() => {
+                    try { return typeof sub.strategic_profile === 'string' ? JSON.parse(sub.strategic_profile) : sub.strategic_profile }
+                    catch { return null }
+                  })()
+                  const score = sub.clarity_score ?? 0
+                  const breakdown = sub.score_breakdown ?? {}
+                  const scoreColor = score >= 75 ? '#4ADE80' : score >= 50 ? GOLD : '#F87171'
+                  const stageColors: Record<string, string> = {
+                    'Exploradora': '#8B5CF6',
+                    'Arrancando': '#3B82F6',
+                    'En Movimiento': GOLD,
+                    'Escalando': '#4ADE80',
+                  }
+                  const stageColor = profile?.stage ? (stageColors[profile.stage] ?? '#8B5CF6') : '#8B5CF6'
+                  const isExpanded = expandedClarity === sub.id
+
+                  return (
+                    <motion.div
+                      key={sub.id}
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                      className="rounded-2xl overflow-hidden"
+                      style={{ background: SURFACE, border: `1px solid ${isExpanded ? '#8B5CF666' : BORDER}` }}
+                    >
+                      {/* Card header — always visible */}
+                      <button
+                        className="w-full px-5 py-4 flex items-center justify-between text-left"
+                        onClick={() => setExpandedClarity(isExpanded ? null : sub.id)}
+                      >
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                            style={{ background: '#8B5CF622', color: '#A78BFA' }}
+                          >
+                            {(sub.profile_name || sub.profile_email)[0]?.toUpperCase() ?? '?'}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-white font-medium truncate">{sub.profile_name}</p>
+                            <p className="text-gray-500 text-xs truncate">{sub.profile_email}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4 flex-shrink-0">
+                          {/* Score badge */}
+                          <div className="text-center hidden sm:block">
+                            <p className="font-bold text-lg" style={{ color: scoreColor }}>{score}</p>
+                            <p className="text-xs text-gray-500">Score</p>
+                          </div>
+                          {/* Stage badge */}
+                          {profile?.stage && (
+                            <span
+                              className="hidden md:inline text-xs px-2.5 py-1 rounded-full font-medium"
+                              style={{ background: stageColor + '22', color: stageColor }}
+                            >
+                              {profile.stage}
+                            </span>
+                          )}
+                          {/* Date */}
+                          <span className="text-gray-600 text-xs hidden sm:block">
+                            {sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : ''}
+                          </span>
+                          <span className="text-gray-500 text-xs">{isExpanded ? '▲' : '▼'}</span>
+                        </div>
+                      </button>
+
+                      {/* Expanded profile */}
+                      {isExpanded && (
+                        <div className="px-5 pb-6" style={{ borderTop: `1px solid ${BORDER}` }}>
+                          {profile ? (
+                            <>
+                              {/* Headline + stage */}
+                              <div className="mt-5 mb-4">
+                                <div
+                                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-3"
+                                  style={{ background: stageColor + '22', color: stageColor }}
+                                >
+                                  <Sparkles size={11} />
+                                  {profile.stage}
+                                </div>
+                                {profile.headline && (
+                                  <p className="text-white font-semibold text-base leading-snug">{profile.headline}</p>
+                                )}
+                                {profile.stage_description && (
+                                  <p className="text-gray-400 text-sm mt-1">{profile.stage_description}</p>
+                                )}
+                              </div>
+
+                              {/* Score breakdown */}
+                              <div className="rounded-xl p-4 mb-4" style={{ background: '#0A0A0A', border: '1px solid #1E1E1E' }}>
+                                <p className="text-xs text-gray-500 uppercase tracking-widest mb-3">Clarity Score — {score}/100</p>
+                                {Object.entries(breakdown).map(([key, val]) => {
+                                  const labels: Record<string, string> = {
+                                    negocio: 'Negocio', situacion: 'Situación', identidad: 'Identidad', oferta: 'Oferta', vision: 'Visión'
+                                  }
+                                  const pct = Math.round((Number(val) / 20) * 100)
+                                  return (
+                                    <div key={key} className="mb-2">
+                                      <div className="flex justify-between text-xs mb-1">
+                                        <span className="text-gray-400">{labels[key] ?? key}</span>
+                                        <span className="font-semibold" style={{ color: scoreColor }}>{val}/20</span>
+                                      </div>
+                                      <div className="h-1.5 rounded-full" style={{ background: '#1E1E1E' }}>
+                                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: stageColor }} />
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+
+                              {/* Strengths / Opportunities / Gaps */}
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                                {[
+                                  { label: '✨ Fortalezas', items: profile.strengths as string[], color: '#4ADE80' },
+                                  { label: '🚀 Oportunidades', items: profile.opportunities as string[], color: GOLD },
+                                  { label: '⚡ Brechas de Claridad', items: profile.clarity_gaps as string[], color: '#F87171' },
+                                ].map(col => (
+                                  <div key={col.label} className="rounded-xl p-4" style={{ background: '#0A0A0A', border: '1px solid #1E1E1E' }}>
+                                    <p className="text-xs font-semibold mb-2" style={{ color: col.color }}>{col.label}</p>
+                                    <ul className="space-y-1.5">
+                                      {(col.items ?? []).map((item, j) => (
+                                        <li key={j} className="text-gray-300 text-xs flex items-start gap-1.5">
+                                          <span className="mt-0.5 flex-shrink-0" style={{ color: col.color }}>•</span>
+                                          {item}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Ignite message + First focus */}
+                              {(profile.ignite_message || profile.first_focus) && (
+                                <div className="rounded-xl p-4 mb-4" style={{ background: 'linear-gradient(135deg, #1a0a2e 0%, #16082a 100%)', border: '1px solid #7C3AED44' }}>
+                                  {profile.ignite_message && (
+                                    <div className="mb-3">
+                                      <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#A78BFA' }}>✨ Mensaje IGNITE</p>
+                                      <p className="text-gray-200 text-sm italic">"{profile.ignite_message}"</p>
+                                    </div>
+                                  )}
+                                  {profile.first_focus && (
+                                    <div>
+                                      <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: GOLD }}>🎯 Primer enfoque</p>
+                                      <p className="text-gray-300 text-sm">{profile.first_focus}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="py-4 text-center text-gray-500 text-sm">No se pudo cargar el perfil estratégico.</div>
+                          )}
+
+                          {/* Carmen's admin notes */}
+                          <div className="mt-2">
+                            <p className="text-xs text-gray-500 uppercase tracking-widest mb-2">📝 Mis notas (privadas)</p>
+                            <textarea
+                              rows={3}
+                              value={noteText[sub.id] ?? ''}
+                              onChange={e => setNoteText(n => ({ ...n, [sub.id]: e.target.value }))}
+                              placeholder="Notas para esta participante (solo tú las ves)..."
+                              className="w-full px-3 py-2 rounded-lg text-sm text-white resize-none outline-none mb-2"
+                              style={{ background: '#0A0A0A', border: '1px solid #2A2A2A' }}
+                              onFocus={e => (e.target.style.borderColor = GOLD)}
+                              onBlur={e => (e.target.style.borderColor = '#2A2A2A')}
+                            />
+                            <button
+                              onClick={() => saveAdminNotes(sub.id)}
+                              disabled={savingNote === sub.id}
+                              className="px-4 py-2 rounded-lg text-xs font-semibold disabled:opacity-50 transition-all"
+                              style={{ background: GOLD, color: '#0A0A0A' }}
+                            >
+                              {savingNote === sub.id ? 'Guardando...' : 'Guardar nota'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         )}
 
