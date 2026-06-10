@@ -261,6 +261,50 @@ export default function DashboardPage() {
             </button>
           </motion.div>
 
+          {/* ── RECORRIDO 12 SEMANAS — visible desde el primer día ── */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
+            className="mt-6 rounded-2xl p-5"
+            style={{ background: SURFACE, border: `1px solid ${BORDER}` }}>
+            <p className="text-white font-semibold text-sm mb-1">Tu Recorrido — 12 Semanas</p>
+            <p className="text-gray-600 text-xs mb-4">Completa los pasos previos para ir desbloqueando cada fase.</p>
+            <div className="space-y-3">
+              {(['C','R','E','A','R2'] as const).map(ph => {
+                const phaseInfo = CREAR_PHASES[ph]
+                const phaseWeeks = CURRICULUM.filter(c => c.phase === ph)
+                return (
+                  <div key={ph}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-black w-5 h-5 rounded flex items-center justify-center flex-shrink-0"
+                        style={{ background: `${phaseInfo.color}22`, color: phaseInfo.color }}>
+                        {phaseInfo.letter}
+                      </span>
+                      <span className="text-xs font-semibold" style={{ color: phaseInfo.color }}>
+                        {phaseInfo.name}
+                      </span>
+                      <span className="text-xs text-gray-600">
+                        Sem {phaseWeeks[0].week}–{phaseWeeks[phaseWeeks.length - 1].week}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto pb-0.5">
+                      {phaseWeeks.map(c => (
+                        <div key={c.week}
+                          className="flex-shrink-0 rounded-xl px-3 py-2.5 min-w-[130px]"
+                          style={{ background: '#0A0A0A', border: `1px solid ${phaseInfo.color}22` }}>
+                          <p className="text-xs font-semibold mb-0.5" style={{ color: phaseInfo.color }}>
+                            S{c.week}
+                          </p>
+                          <p className="text-xs leading-tight line-clamp-2 text-gray-500">
+                            {c.main.emoji} {c.main.title.split('—')[0].trim()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </motion.div>
+
         </div>
       </div>
     )
