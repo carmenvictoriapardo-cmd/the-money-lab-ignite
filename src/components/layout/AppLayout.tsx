@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth'
 import {
   LayoutDashboard, BarChart3, Star, Zap, Shield,
   Target, DollarSign, Crown, LogOut, Flame, Award, Lightbulb, Users, KeyRound, X, Bell, BellOff, BookOpen,
-  CalendarDays, Trophy,
+  CalendarDays, Trophy, Sparkles,
 } from 'lucide-react'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 
@@ -39,6 +39,13 @@ const NAV_SECTIONS = [
       { to: '/dashboard',  icon: LayoutDashboard, label: 'Inicio' },
       { to: '/semana',     icon: CalendarDays,    label: 'Esta Semana', badge: 'HOY' },
       { to: '/scoreboard', icon: Trophy,          label: 'Scoreboard 🏆' },
+    ],
+  },
+  {
+    label: '─── Pre-Programa',
+    labelColor: '#8B5CF6',
+    items: [
+      { to: '/clarity', icon: Sparkles, label: 'CLARITY SPRINT™', badge: 'Antes' },
     ],
   },
   {

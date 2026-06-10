@@ -8,6 +8,7 @@ import {
   ArrowRight, Flame, TrendingUp, DollarSign, Zap, Shield,
   Star, Target, Sparkles, Loader2, RefreshCw, BookOpen, ChevronRight, CalendarDays, Trophy,
 } from 'lucide-react'
+// Note: TrendingUp, Flame, Zap, Shield imported but may be used elsewhere
 import { CREAR_PHASES, getCurriculumWeek } from '../data/curriculum'
 import type { WeeklyScore, WeeklyStandup, WeeklyInsight } from '../types'
 
@@ -108,6 +109,7 @@ export default function DashboardPage() {
   const [identityConf, setIdentityConf]     = useState(0)
   const [standupPct, setStandupPct]         = useState(0)
   const [dailyStreak, setDailyStreak]       = useState(0)
+  const [clarityDone, setClarityDone]       = useState(false)
   const [flags, setFlags] = useState({
     storyBrandDone: false,
     offerDone: false,
@@ -137,7 +139,7 @@ export default function DashboardPage() {
     const [
       crearRes, standupRes, revenueRes, blockerRes,
       identityRes, insightRes, dailyRes,
-      offerRes, storyRes,
+      offerRes, storyRes, clarityRes,
     ] = await Promise.all([
       supabase.from('weekly_scores').select('*').eq('user_id', uid).order('week_number', { ascending: false }).limit(1),
       supabase.from('weekly_standups').select('week_number, created_at').eq('user_id', uid).order('week_number', { ascending: false }).limit(1),
@@ -148,6 +150,7 @@ export default function DashboardPage() {
       supabase.from('daily_revenue_actions').select('action_date, completed').eq('user_id', uid).order('action_date', { ascending: false }).limit(14),
       supabase.from('offer_builder').select('one_liner').eq('user_id', uid).maybeSingle(),
       supabase.from('storybrand_scripts').select('ai_output').eq('user_id', uid).maybeSingle(),
+      supabase.from('clarity_responses').select('id').eq('user_id', uid).eq('status', 'submitted').limit(1),
     ])
 
     const latestC = crearRes.data?.[0] ?? null
@@ -178,6 +181,7 @@ export default function DashboardPage() {
     }
     setDailyStreak(streak)
 
+    setClarityDone((clarityRes.data?.length ?? 0) > 0)
     setFlags({
       storyBrandDone: !!(storyRes.data as any)?.ai_output,
       offerDone:      !!(offerRes.data as any)?.one_liner,
@@ -426,6 +430,31 @@ export default function DashboardPage() {
             </motion.div>
           )
         })()}
+
+        {/* ── CLARITY SPRINT™ BANNER (si no está hecho) ─────── */}
+        {!clarityDone && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <button onClick={() => navigate('/clarity')}
+              className="w-full text-left rounded-2xl p-4 flex items-center gap-4 transition-all hover:scale-[1.01] group"
+              style={{ background: '#140d1f', border: '2px solid #8B5CF655' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: '#8B5CF622', border: '1px solid #8B5CF644' }}>
+                <span className="text-xl">⚡</span>
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-bold uppercase tracking-wider mb-0.5" style={{ color: '#8B5CF6' }}>
+                  PRE-PROGRAMA · Pendiente
+                </p>
+                <p className="text-white font-semibold text-sm">CLARITY SPRINT™</p>
+                <p className="text-gray-500 text-xs mt-0.5">
+                  20 preguntas · la IA genera tu Strategic Founder Profile™ · ~15 min
+                </p>
+              </div>
+              <ArrowRight size={16} style={{ color: '#8B5CF6' }}
+                className="group-hover:translate-x-1 transition-transform flex-shrink-0" />
+            </button>
+          </motion.div>
+        )}
 
         {/* ── CHECKLIST DE HÁBITOS ───────────────────────────── */}
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
