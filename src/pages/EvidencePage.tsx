@@ -11,39 +11,39 @@ const BORDER = '#1E1E1E'
 
 const EVIDENCE_TYPES = [
   {
-    key: 'primer_pago',
-    label: 'Primer Pago',
-    emoji: '💰',
-    color: '#4ADE80',
-    desc: 'Primera venta o pago confirmado — el hito más importante.',
+    key: 'accion',
+    label: 'Acción',
+    emoji: '⚡',
+    color: '#F59E0B',
+    desc: 'Hiciste algo que antes evitabas o postergabas: un DM, una llamada, publicar, cotizar, presentar.',
   },
   {
-    key: 'primer_dm',
-    label: 'Primer DM',
-    emoji: '💬',
+    key: 'breakthrough',
+    label: 'Breakthrough',
+    emoji: '💡',
+    color: '#A78BFA',
+    desc: 'Momento de quiebre o claridad que cambia cómo piensas, te presentas o actúas.',
+  },
+  {
+    key: 'contenido',
+    label: 'Contenido',
+    emoji: '📱',
     color: '#60A5FA',
-    desc: 'Tu primer mensaje o respuesta de un potencial cliente.',
+    desc: 'Publicaste contenido que representa genuinamente quién eres y lo que ofreces.',
   },
   {
     key: 'testimonio',
     label: 'Testimonio',
     emoji: '⭐',
     color: GOLD,
-    desc: 'Feedback, review o testimonio de un cliente.',
+    desc: 'Feedback, review o testimonio de un cliente o seguidor impactado por tu trabajo.',
   },
   {
-    key: 'breakthrough',
-    label: 'Breakthrough',
-    emoji: '⚡',
-    color: '#A78BFA',
-    desc: 'Momento de quiebre, claridad o realización clave.',
-  },
-  {
-    key: 'otro',
-    label: 'Otro Win',
-    emoji: '🏆',
-    color: '#FB923C',
-    desc: 'Otro logro o hito importante del programa.',
+    key: 'primera_venta',
+    label: 'Primera Venta',
+    emoji: '🎯',
+    color: '#4ADE80',
+    desc: 'Cerraste una venta — el resultado natural de tomar acción.',
   },
 ] as const
 
@@ -65,7 +65,7 @@ export default function EvidencePage() {
   const { profile } = useAuth()
   const [items, setItems] = useState<EvidenceItem[]>([])
   const [showForm, setShowForm] = useState(false)
-  const [type, setType] = useState<EvidenceType>('primer_pago')
+  const [type, setType] = useState<EvidenceType>('accion')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [imageUrl, setImageUrl] = useState('')
@@ -103,7 +103,7 @@ export default function EvidencePage() {
   }
 
   function resetForm() {
-    setType('primer_pago')
+    setType('accion')
     setTitle('')
     setDescription('')
     setImageUrl('')
@@ -111,10 +111,10 @@ export default function EvidencePage() {
   }
 
   // ── Stats ──────────────────────────────────────────────────────────────
-  const totalItems = items.length
-  const testimonials = items.filter(i => i.type === 'testimonio').length
+  const totalItems    = items.length
+  const acciones      = items.filter(i => i.type === 'accion').length
   const breakthroughs = items.filter(i => i.type === 'breakthrough').length
-  const firstPayment = items.find(i => i.type === 'primer_pago')
+  const firstVenta    = items.find(i => i.type === 'primera_venta')
 
   return (
     <div className="min-h-screen p-4 md:p-8" style={{ background: '#0A0A0A' }}>
@@ -126,9 +126,9 @@ export default function EvidencePage() {
             <Award size={18} style={{ color: GOLD }} />
             <p className="text-xs tracking-[0.2em] uppercase" style={{ color: GOLD }}>Evidence Locker™</p>
           </div>
-          <h1 className="text-2xl font-bold text-white">Tu muro de wins</h1>
+          <h1 className="text-2xl font-bold text-white">Muro de Acción™</h1>
           <p className="text-gray-400 text-sm mt-1">
-            Cada evidencia aquí es prueba de que estás avanzando. Guarda todo.
+            La prueba está en lo que hiciste, no en lo que planificaste. Registra cada acción.
           </p>
         </motion.div>
 
@@ -139,9 +139,9 @@ export default function EvidencePage() {
             className="grid grid-cols-3 gap-3 mb-6"
           >
             {[
-              { label: 'Total evidencias', value: totalItems, color: GOLD },
-              { label: 'Testimonios', value: testimonials, color: GOLD },
-              { label: 'Breakthroughs', value: breakthroughs, color: '#A78BFA' },
+              { label: 'Acciones tomadas', value: acciones,      color: '#F59E0B' },
+              { label: 'Breakthroughs',    value: breakthroughs, color: '#A78BFA' },
+              { label: 'Total evidencias', value: totalItems,    color: GOLD },
             ].map(s => (
               <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: SURFACE, border: `1px solid ${BORDER}` }}>
                 <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -151,18 +151,18 @@ export default function EvidencePage() {
           </motion.div>
         )}
 
-        {/* First payment highlight */}
-        {firstPayment && (
+        {/* Primera venta — al final del recorrido, sin monto */}
+        {firstVenta && (
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
             className="rounded-2xl p-4 mb-6 flex items-center gap-4"
             style={{ background: 'linear-gradient(135deg, #052014 0%, #071a0e 100%)', border: '1px solid #4ADE8066' }}
           >
-            <span className="text-3xl">💰</span>
+            <span className="text-3xl">🎯</span>
             <div>
-              <p className="text-xs font-semibold tracking-wider uppercase" style={{ color: '#4ADE80' }}>Primera venta</p>
-              <p className="text-white font-bold">{firstPayment.title}</p>
-              <p className="text-gray-400 text-xs mt-0.5">{formatDate(firstPayment.event_date)}</p>
+              <p className="text-xs font-semibold tracking-wider uppercase" style={{ color: '#4ADE80' }}>Primera venta cerrada</p>
+              <p className="text-white font-bold">{firstVenta.title}</p>
+              <p className="text-gray-400 text-xs mt-0.5">{formatDate(firstVenta.event_date)}</p>
             </div>
           </motion.div>
         )}
@@ -238,11 +238,12 @@ export default function EvidencePage() {
                       value={title}
                       onChange={e => setTitle(e.target.value)}
                       placeholder={
-                        type === 'primer_pago' ? 'Ej: Primer cliente pagó $1,500' :
-                        type === 'primer_dm' ? 'Ej: Respuesta de potencial cliente en LinkedIn' :
-                        type === 'testimonio' ? 'Ej: María dice que duplicó sus ventas' :
-                        type === 'breakthrough' ? 'Ej: Entendí cuál es mi oferta irresistible' :
-                        'Describe tu win en una línea'
+                        type === 'accion'        ? 'Ej: Envié mi primera propuesta por DM' :
+                        type === 'breakthrough'  ? 'Ej: Entendí cuál es mi oferta irresistible' :
+                        type === 'contenido'     ? 'Ej: Publiqué mi primer Reel de autoridad' :
+                        type === 'testimonio'    ? 'Ej: María dice que esto cambió su negocio' :
+                        type === 'primera_venta' ? 'Ej: Cerré mi primera venta del programa' :
+                        'Describe tu acción en una línea'
                       }
                       className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
                       style={{ background: '#0A0A0A', border: `1px solid #2A2A2A` }}
@@ -311,9 +312,9 @@ export default function EvidencePage() {
         {items.length === 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
             <p className="text-5xl mb-4">🏆</p>
-            <p className="text-white font-semibold text-lg mb-2">Tu locker está vacío — por ahora</p>
+            <p className="text-white font-semibold text-lg mb-2">Aún sin acciones registradas</p>
             <p className="text-gray-500 text-sm max-w-xs mx-auto">
-              Cada win cuenta, cada DM respondido, cada pago, cada testimonio. Empieza a guardarlos aquí.
+              Cada DM enviado, cada publicación, cada propuesta, cada conversación — es evidencia de que estás en movimiento.
             </p>
           </motion.div>
         )}
@@ -324,7 +325,7 @@ export default function EvidencePage() {
             {items.map((item, i) => {
               const meta = typeMeta(item.type)
               const isExpanded = expandedId === item.id
-              const isFirstPayment = item.type === 'primer_pago'
+              const isFirstVenta = item.type === 'primera_venta'
 
               return (
                 <motion.div
@@ -335,8 +336,7 @@ export default function EvidencePage() {
                   className="rounded-xl overflow-hidden"
                   style={{
                     background: SURFACE,
-                    border: `1px solid ${isFirstPayment ? '#4ADE8055' : meta.color + '33'}`,
-                    boxShadow: isFirstPayment ? '0 0 20px #4ADE8011' : undefined,
+                    border: `1px solid ${isFirstVenta ? '#4ADE8055' : meta.color + '33'}`,
                   }}
                 >
                   <button
@@ -353,12 +353,6 @@ export default function EvidencePage() {
                           >
                             {meta.label}
                           </span>
-                          {isFirstPayment && (
-                            <span className="text-xs px-2 py-0.5 rounded-full animate-pulse"
-                              style={{ background: '#4ADE8022', color: '#4ADE80' }}>
-                              🥇 Hito
-                            </span>
-                          )}
                         </div>
                         <p className="text-white font-medium text-sm leading-snug">{item.title}</p>
                         <p className="text-gray-500 text-xs mt-0.5">{formatDate(item.event_date)}</p>
@@ -422,7 +416,7 @@ export default function EvidencePage() {
             style={{ background: `${GOLD}0A`, border: `1px solid ${GOLD}22` }}
           >
             <p className="text-sm" style={{ color: GOLD }}>
-              {items.length} evidencias capturadas — cada una es prueba de que eres capaz. 🔥
+              {items.length} acciones registradas — la prueba está en lo que hiciste. 🔥
             </p>
           </motion.div>
         )}

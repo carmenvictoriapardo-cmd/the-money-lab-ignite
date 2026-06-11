@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import {
   LayoutDashboard, BarChart3, Star, Zap, Shield,
-  Target, DollarSign, Crown, LogOut, Flame, Award, Lightbulb, Users, KeyRound, X, Bell, BellOff, BookOpen,
+  Target, Crown, LogOut, Flame, Award, Lightbulb, Users, KeyRound, X, Bell, BellOff, BookOpen,
   CalendarDays, Trophy, Sparkles,
 } from 'lucide-react'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
@@ -54,10 +54,9 @@ const NAV_SECTIONS = [
     label: '─── Resultados',
     labelColor: '#10B981',
     items: [
-      { to: '/crear',     icon: BarChart3,  label: 'C.R.E.A.R.' },
-      { to: '/revenue',   icon: DollarSign, label: 'Revenue' },
-      { to: '/reviews',   icon: Target,     label: 'Reviews' },
-      { to: '/evidencia', icon: Award,      label: 'Evidencias' },
+      { to: '/crear',     icon: BarChart3, label: 'C.R.E.A.R.' },
+      { to: '/reviews',   icon: Target,    label: 'Reviews' },
+      { to: '/evidencia', icon: Award,     label: 'Evidencias' },
     ],
   },
 ]
