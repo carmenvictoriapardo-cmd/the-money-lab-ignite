@@ -188,7 +188,7 @@ export const CLARITY_QUESTIONS: ClarityQuestion[] = [
     id: 'men_4',
     section: 'Mentalidad & Compromiso',
     sectionKey: 'mentalidad',
-    text: '¿Por qué ahora? ¿Qué hace que este sea el momento correcto para unirte a IGNITE?',
+    text: '¿Por qué ahora? ¿Qué hace que este sea el momento correcto para unirte al programa?',
     type: 'text',
     weight: 5,
   },

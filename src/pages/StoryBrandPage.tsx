@@ -141,7 +141,7 @@ const STEPS = [
       {
         key: 'direct_cta',
         label: 'CTA DIRECTO — Tu botón de acción principal',
-        placeholder: 'Ej: "Aplica al programa", "Agenda tu sesión estratégica", "Únete a IGNITE"',
+        placeholder: 'Ej: "Aplica al programa", "Agenda tu sesión estratégica", "Únete al programa"',
         hint: 'Claro, específico, sin rodeos. ¿Qué acción concreta quieres que tomen?',
         rows: 2,
       },

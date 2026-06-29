@@ -293,7 +293,7 @@ export default function ClaritySprintPage() {
             </p>
             <h1 className="text-2xl font-bold text-white">Strategic Founder Profile™</h1>
             <p className="text-gray-500 text-sm mt-0.5">
-              {profile!.full_name} · Perfil generado para THE MONEY LAB™ IGNITE
+              {profile!.full_name} · Perfil generado para THE MONEY LAB™
             </p>
           </motion.div>
 

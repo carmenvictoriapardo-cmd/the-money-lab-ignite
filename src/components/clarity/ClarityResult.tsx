@@ -14,17 +14,17 @@ function getScoreLevel(score: number) {
   if (score >= 80) return {
     label: 'BASE SÓLIDA — LISTO(A) PARA ESCALAR',
     color: '#4ADE80',
-    message: 'Tienes una base sólida. IGNITE va a acelerar tu crecimiento exponencialmente.',
+    message: 'Tienes una base sólida. The Money Lab va a acelerar tu crecimiento exponencialmente.',
   }
   if (score >= 60) return {
-    label: 'CON POTENCIAL — IGNITE LO ACTIVA',
+    label: 'CON POTENCIAL — EL PROGRAMA LO ACTIVA',
     color: GOLD,
-    message: 'Tienes los fundamentos clave. IGNITE te va a dar la claridad, estructura y acción que necesitas para despegar.',
+    message: 'Tienes los fundamentos clave. The Money Lab te va a dar la claridad, estructura y acción que necesitas para despegar.',
   }
   return {
     label: 'PUNTO DE PARTIDA PERFECTO',
     color: '#FB923C',
-    message: 'Estás en el lugar correcto. IGNITE está diseñado exactamente para donde estás ahora — de aquí en adelante todo cambia.',
+    message: 'Estás en el lugar correcto. The Money Lab está diseñado exactamente para donde estás ahora — de aquí en adelante todo cambia.',
   }
 }
 

@@ -120,7 +120,7 @@ export default function RevenuePage() {
                     Esto es real. Esto es tuyo. Lo construiste tú.
                   </p>
                   <p className="text-gray-400 text-xs mb-6">
-                    Día {day} de tu programa IGNITE. Este momento marca el inicio de tu nuevo nivel.
+                    Día {day} de tu programa. Este momento marca el inicio de tu nuevo nivel.
                   </p>
                   <button
                     onClick={() => setShowRitual(false)}

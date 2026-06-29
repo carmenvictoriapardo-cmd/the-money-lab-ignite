@@ -330,7 +330,7 @@ export default function DashboardPage() {
 
         {/* ── HEADER ─────────────────────────────────────────── */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <p className="text-xs tracking-[0.2em] uppercase mb-1" style={{ color: GOLD }}>THE MONEY LAB™ IGNITE</p>
+          <p className="text-xs tracking-[0.2em] uppercase mb-1" style={{ color: GOLD }}>THE MONEY LAB™</p>
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-white">
               {profile.full_name?.split(' ')[0] || 'Igniter'} 👋

@@ -76,7 +76,7 @@ export default function ScoreboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs tracking-[0.2em] uppercase mb-1" style={{ color: GOLD }}>
-                THE MONEY LAB™ IGNITE
+                THE MONEY LAB™
               </p>
               <h1 className="text-2xl font-bold text-white flex items-center gap-2">
                 🏆 Scoreboard
@@ -256,7 +256,7 @@ export default function ScoreboardPage() {
           className="mt-6 rounded-xl p-4"
           style={{ background: SURFACE, border: `1px solid ${BORDER}` }}>
           <p className="text-xs font-semibold uppercase tracking-wider mb-2 text-gray-500">
-            Cómo se calcula el IGNITE Score
+            Cómo se calcula el Score
           </p>
           <div className="grid grid-cols-2 gap-1.5 text-xs text-gray-500">
             <span>📊 C.R.E.A.R. último</span><span className="text-right" style={{ color: '#60A5FA' }}>35%</span>

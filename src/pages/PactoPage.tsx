@@ -70,7 +70,7 @@ export default function PactoPage() {
           <div className="flex items-center justify-center gap-2 mb-3">
             <Flame size={20} style={{ color: GOLD }} />
             <p className="text-xs tracking-[0.3em] uppercase font-medium" style={{ color: GOLD }}>
-              THE MONEY LAB™ IGNITE
+              THE MONEY LAB™
             </p>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">El Pacto de Ejecución™</h1>
@@ -98,7 +98,7 @@ export default function PactoPage() {
           <div className="space-y-5 text-gray-300 text-sm leading-relaxed">
             <p>
               Este pacto define la relación entre <strong className="text-white">Carmen Victoria Pardo</strong> y tú
-              durante los próximos <strong className="text-white">90 días</strong> del programa THE MONEY LAB™ IGNITE.
+              durante los próximos <strong className="text-white">90 días</strong> del programa THE MONEY LAB™.
             </p>
 
             <div className="rounded-xl p-5" style={{ background: '#1A1A1A', border: '1px solid #2A2A2A' }}>

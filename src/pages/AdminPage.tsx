@@ -383,7 +383,7 @@ export default function AdminPage() {
                         style={{ color: p.igniteScore >= 70 ? '#4ADE80' : p.igniteScore >= 40 ? GOLD : '#F87171' }}>
                         {p.igniteScore}
                       </p>
-                      <p className="text-xs text-gray-500">IGNITE</p>
+                      <p className="text-xs text-gray-500">Score</p>
                     </div>
                     {/* Day */}
                     <div className="text-center hidden md:block">
@@ -714,7 +714,7 @@ export default function AdminPage() {
                                 <div className="rounded-xl p-4 mb-4" style={{ background: 'linear-gradient(135deg, #1a0a2e 0%, #16082a 100%)', border: '1px solid #7C3AED44' }}>
                                   {profile.ignite_message && (
                                     <div className="mb-3">
-                                      <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#A78BFA' }}>✨ Mensaje IGNITE</p>
+                                      <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#A78BFA' }}>✨ Mensaje del Programa</p>
                                       <p className="text-gray-200 text-sm italic">"{profile.ignite_message}"</p>
                                     </div>
                                   )}

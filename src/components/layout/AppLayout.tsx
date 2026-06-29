@@ -175,7 +175,7 @@ export default function AppLayout() {
           <p className="text-xs tracking-[0.25em] uppercase font-medium" style={{ color: GOLD }}>
             THE MONEY LAB™
           </p>
-          <p className="text-white text-sm font-bold mt-0.5">IGNITE OS</p>
+          <p className="text-white text-sm font-bold mt-0.5">Programa 90 días</p>
 
           {/* Program progress */}
           {profile?.onboarded && (

@@ -28,7 +28,7 @@ self.addEventListener('push', (event) => {
   const data = event.data.json()
 
   event.waitUntil(
-    self.registration.showNotification(data.title || '🔥 IGNITE', {
+    self.registration.showNotification(data.title || '🔥 The Money Lab', {
       body: data.body || '',
       icon: '/pwa-192.svg',
       badge: '/pwa-192.svg',

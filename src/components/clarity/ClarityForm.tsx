@@ -90,7 +90,7 @@ export default function ClarityForm() {
           <p className="text-xs tracking-[0.3em] uppercase mb-2" style={{ color: GOLD }}>
             Formulario de Claridad Pre-Programa
           </p>
-          <h1 className="text-2xl font-bold text-white">THE MONEY LAB™ IGNITE</h1>
+          <h1 className="text-2xl font-bold text-white">THE MONEY LAB™</h1>
           <p className="text-gray-400 text-sm mt-1">
             Sección {currentSection + 1} de {totalSections}
           </p>
