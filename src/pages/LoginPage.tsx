@@ -54,11 +54,11 @@ export default function LoginPage() {
 
         {/* Header */}
         <div className="text-center mb-10">
-          <p className="text-xs tracking-[0.3em] mb-3 uppercase" style={{ color: GOLD }}>
+          <img src="/logo.svg" alt="The Money Lab" style={{ width: 80, height: 80, margin: '0 auto 16px' }} />
+          <p className="text-xs tracking-[0.3em] mb-1 uppercase" style={{ color: GOLD }}>
             Carmen Victoria Pardo
           </p>
-          <h1 className="text-3xl font-bold text-white mb-1">THE MONEY LAB™</h1>
-          <p className="text-lg font-light text-gray-400">The Money Lab</p>
+          <h1 className="text-2xl font-bold text-white">THE MONEY LAB™</h1>
         </div>
 
         {/* Card */}

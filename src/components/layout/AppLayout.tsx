@@ -172,10 +172,13 @@ export default function AppLayout() {
       >
         {/* Logo */}
         <div className="px-5 pt-6 pb-4" style={{ borderBottom: `1px solid ${BORDER}` }}>
-          <p className="text-xs tracking-[0.25em] uppercase font-medium" style={{ color: GOLD }}>
-            THE MONEY LAB™
-          </p>
-          <p className="text-white text-sm font-bold mt-0.5">Programa 90 días</p>
+          <div className="flex items-center gap-3 mb-1">
+            <img src="/logo.svg" alt="The Money Lab" style={{ width: 36, height: 36, flexShrink: 0 }} />
+            <div>
+              <p className="text-xs tracking-[0.2em] uppercase font-medium leading-none" style={{ color: GOLD }}>THE MONEY LAB™</p>
+              <p className="text-white text-xs mt-0.5 opacity-60">Programa 90 días</p>
+            </div>
+          </div>
 
           {/* Program progress */}
           {profile?.onboarded && (
